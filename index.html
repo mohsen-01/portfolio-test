@@ -16,7 +16,7 @@
   --gray:#8c8c8c;
   --accent:#d8b25c;
   --sw:240px;
-  --gap:3px;
+  --gap:6px;
   --tb:50px;
   --f:'Inter',sans-serif;
   --fd:'DM Serif Display',serif;
@@ -986,7 +986,7 @@ img.onerror = () => resolve({
   sorted.forEach((item, index) => {
     const h   = Math.round(colW / item.ratio);
     const card = document.createElement('div');
-    card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%'border-radius:10px';
+    card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%';border-radius:10px';
 
     const origIdx = item.originalIndex;
     if(item.isVthumb){
