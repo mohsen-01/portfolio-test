@@ -1104,21 +1104,13 @@ thumb.style.opacity=1;
 img.style.opacity=0;
 
 const full=new Image();
-
 full.onload=()=>{
-
-    img.src=full.src;
-
-    requestAnimationFrame(()=>{
-
-        img.style.opacity=1;
-
-        thumb.style.opacity=0;
-
-    });
-
+  img.src=full.src;
+  img.onload=()=>{
+    img.style.opacity=1;
+    thumb.style.opacity=0;
+  };
 };
-
 full.src='public/'+item.hq;
   }
   document.getElementById('lb-mt').textContent=item.title||'';
