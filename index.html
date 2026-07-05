@@ -926,7 +926,7 @@ async function renderGrid(items){
   grid.style.cssText = 'display:flex;gap:3px;padding:3px;align-items:flex-start;opacity:0;transition:opacity .5s ease';
 
   // 1. detect ratios
-  const itemsWithRatio = await Promise.all(items.map(item => new Promise(resolve => {
+const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(resolve => {
     const isVthumb = item.thumb && /\.(mp4|mov|webm)$/i.test(item.thumb);
     if(isVthumb){
         // detect video ratio via HTMLVideoElement
@@ -935,15 +935,30 @@ async function renderGrid(items){
         v.preload = 'metadata';
         v.onloadedmetadata = () => {
           const r = v.videoWidth && v.videoHeight ? v.videoWidth/v.videoHeight : 1.25;
-          resolve({...item, ratio:r, isVthumb:true});
+          resolve({
+    ...item,
+    ratio:r,
+    isVthumb:true,
+    originalIndex:index
+});
         };
         v.onerror = () => resolve({...item, ratio:1.25, isVthumb:true});
         v.src = 'public/' + item.thumb;
         return;
       }
     const img = new Image();
-    img.onload  = () => resolve({...item, ratio: img.naturalWidth/img.naturalHeight, isVthumb:false});
-    img.onerror = () => resolve({...item, ratio: 1.25, isVthumb:false});
+   img.onload = () => resolve({
+    ...item,
+    ratio: img.naturalWidth / img.naturalHeight,
+    isVthumb: false,
+    originalIndex: index
+});
+img.onerror = () => resolve({
+    ...item,
+    ratio: 1.25,
+    isVthumb: false,
+    originalIndex: index
+});
     img.src = 'public/' + item.thumb;
   })));
 
@@ -969,7 +984,7 @@ async function renderGrid(items){
     const card = document.createElement('div');
     card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%';
 
-    const origIdx = items.indexOf(item);
+    const origIdx = item.originalIndex;
     if(item.isVthumb){
       card.innerHTML = `<video src="public/${item.thumb}" autoplay muted loop playsinline style="width:100%;height:${h}px;object-fit:cover;display:block;filter:brightness(.85)"></video><div class="pi-ov"><span>▶</span></div>`;
     } else {
