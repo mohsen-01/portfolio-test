@@ -16,7 +16,7 @@
   --gray:#8c8c8c;
   --accent:#d8b25c;
   --sw:240px;
-  --gap:6px;
+  --gap:10px;
   --tb:50px;
   --f:'Inter',sans-serif;
   --fd:'DM Serif Display',serif;
@@ -975,7 +975,7 @@ img.onerror = () => resolve({
   const colEls = [], colH = [];
   for(let i = 0; i < cols; i++){
     const c = document.createElement('div');
-    c.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:3px;min-width:0';
+    c.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:10px;min-width:0';
     grid.appendChild(c);
     colEls.push(c); colH.push(0);
   }
