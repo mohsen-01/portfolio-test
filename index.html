@@ -79,6 +79,40 @@ html,body{
   color:var(--gray);
 }
 
+#tb-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:1;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:capitalize;
+}
+
+#bc-home{
+    cursor:pointer;
+    color:var(--gray);
+    transition:.25s;
+}
+
+#bc-home:hover{
+    color:#fff;
+}
+
+#bc-arrow{
+    color:rgba(255,255,255,.25);
+    transition:.25s;
+}
+
+#tb-left:hover #bc-arrow{
+    transform:translateX(-2px);
+    color:#fff;
+}
+
+#tb-cat{
+    color:#fff;
+}
+
 /* hamburger */
 #hbg{
   position:fixed;top:13px;left:14px;z-index:600;
@@ -374,10 +408,14 @@ transition:opacity .4s ease;
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <div id="tb-left">
-    <button id="tb-back" onclick="goHome()">←</button>
+  <div id="tb-left" id="breadcrumb">
+
+    <span class="back-arrow">‹</span>
+  <span class="back-home">HOME</span>
+
     <span id="tb-cat"></span>
-  </div>
+
+</div>
   <span id="tb-name">Mohsen-01</span>
 </div>
 
@@ -668,7 +706,11 @@ setAppHeight();
   setTimeout(()=>{nm.classList.add('in');sb.classList.add('in')},150);
 
   DATA=SITE_DATA.categories;
-
+history.replaceState(
+    {page:'home'},
+    '',
+    location.pathname
+);
   setTimeout(()=>{
     nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
     nm.style.transform='translateY(-24px)';
@@ -922,10 +964,16 @@ async function openCat(ci){
   filtItems=[...cat.items];
 
   // topbar
-  document.getElementById('tb-back').style.display='block';
-  document.getElementById('tb-cat').style.display='block';
+  document.getElementById('bc-home').style.display='inline';
+document.getElementById('bc-arrow').style.display='inline';
+document.getElementById('tb-cat').style.display='inline';
+  
   document.getElementById('tb-cat').textContent=cat.title;
-
+history.pushState(
+    {page:'gallery',cat:ci},
+    '',
+    '#'+cat.id
+);
   await renderGrid(filtItems);
   showPg('gallery',false); // false = no topbar reset (handled here)
 }
@@ -1060,8 +1108,9 @@ function showPg(name, resetTopbar=true){
   document.getElementById('pg-'+name).classList.add('act');
   if(name!=='gallery') document.getElementById('pg-'+name).scrollTop=0;
   if(resetTopbar){
-    document.getElementById('tb-back').style.display='none';
-    document.getElementById('tb-cat').style.display='none';
+   document.getElementById('bc-home').style.display='none';
+document.getElementById('bc-arrow').style.display='none';
+document.getElementById('tb-cat').style.display='none';
   }
   closeSB();
 }
@@ -1200,6 +1249,15 @@ document.getElementById('lb').addEventListener('wheel',e=>{
 },{passive:true});
 document.getElementById('lb').addEventListener('click',e=>{
   if(e.target===e.currentTarget)closeLb();
+});
+window.addEventListener('popstate',e=>{
+
+    if(e.state && e.state.page==='gallery'){
+        openCat(e.state.cat);
+    }else{
+        goHome();
+    }
+
 });
 </script>
 </body>
