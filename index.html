@@ -195,12 +195,14 @@ html,body{
 
 /* tile label — bottom center, not middle */
 .tile-lbl{
-  position:absolute;bottom:0;left:0;right:0;
-  padding:28px 16px 18px;
+  position:absolute;bottom:12;left:12;right:12;
+  padding:18px 10px 14px;
   background:linear-gradient(transparent 0%,rgba(0,0,0,.85) 100%) bottom/100% 100% no-repeat;
   z-index:2;
   display:flex;flex-direction:column;align-items:center;
-  text-align:center;
+   justify-content:flex-end;
+
+    overflow:hidden;
 }
 .tile-lbl-t{
   font-family:var(--fd);
@@ -938,7 +940,10 @@ async function openCat(ci){
   document.getElementById('tb-sep').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
-
+gallery.scrollTo({
+    top:0,
+    behavior:"instant"
+});
   await renderGrid(filtItems);
   showPg('gallery',false); // false = no topbar reset (handled here)
 history.pushState(
