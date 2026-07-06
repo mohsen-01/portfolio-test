@@ -61,41 +61,17 @@ html,body{
   backdrop-filter:blur(12px);
   -webkit-backdrop-filter:blur(12px);
 }
-#tb-left{
-    display:flex;
-    align-items:center;
-    gap:10px;
+#tb-left{display:flex;align-items:center;gap:16px;flex:1}
+#tb-back{
+  display:none;background:none;border:none;cursor:pointer;
+  font-size:18px;color:var(--gray);font-family:var(--f);
+  padding:0;transition:color .2s;line-height:1;
 }
-
-.bc-home{
-    font-size:11px;
-    letter-spacing:.22em;
-    text-transform:uppercase;
-    color:var(--gray);
-    cursor:pointer;
-    transition:.25s;
-}
-
-.bc-home:hover{
-    color:var(--text);
-}
-
-.bc-arrow{
-    color:rgba(255,255,255,.25);
-    font-size:13px;
-    transition:.25s;
-}
-
-#tb-cat{
-    font-size:11px;
-    letter-spacing:.22em;
-    text-transform:uppercase;
-    color:var(--text);
-}
-
-
 #tb-back:hover{color:var(--text)}
-
+#tb-cat{
+  display:none;
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--text);
 }
 #tb-name{
   margin-left:auto;
@@ -398,15 +374,10 @@ transition:opacity .4s ease;
 
 <!-- TOPBAR -->
 <div id="topbar">
-<div id="tb-left" id="breadcrumb">
-
-    <span class="bc-home" onclick="goHome()">HOME</span>
-
-    <span class="bc-arrow">›</span>
-
+  <div id="tb-left">
+    <button id="tb-back" onclick="goHome()">←</button>
     <span id="tb-cat"></span>
-
-</div>
+  </div>
   <span id="tb-name">Mohsen-01</span>
 </div>
 
@@ -951,8 +922,8 @@ async function openCat(ci){
   filtItems=[...cat.items];
 
   // topbar
-document.querySelector('.bc-home').style.display='block';
-document.querySelector('.bc-arrow').style.display='block';
+  document.getElementById('tb-back').style.display='block';
+  document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
 
   await renderGrid(filtItems);
@@ -1099,9 +1070,8 @@ function showPg(name, resetTopbar=true){
   document.getElementById('pg-'+name).classList.add('act');
   if(name!=='gallery') document.getElementById('pg-'+name).scrollTop=0;
   if(resetTopbar){
-document.querySelector('.bc-home').style.display='none';
-document.querySelector('.bc-arrow').style.display='none';
-document.getElementById('tb-cat').style.display='none';
+    document.getElementById('tb-back').style.display='none';
+    document.getElementById('tb-cat').style.display='none';
   }
   closeSB();
 }
