@@ -149,7 +149,7 @@ html,body{
 /* iOS zoom layer — wraps the grid, gets scaled */
 #metro-wrap{
   width:100%;
-  height:calc(100vh - var(--tb));
+  height:calc(var(--app-height) - var(--tb));
   transform-origin:center center; /* updated by JS per clicked tile */
   transition:transform .55s cubic-bezier(.4,0,.2,1),
              opacity   .45s ease;
@@ -483,7 +483,14 @@ function shuffle(a){
   }
   return b;
 }
+function setAppHeight() {
+  document.documentElement.style.setProperty(
+    '--app-height',
+    `${window.innerHeight}px`
+  );
+}
 
+window.addEventListener('resize', setAppHeight);
 // ══════════════════════════════════════════════════════
 // DATA — اینجا عکس‌ها رو اضافه کن
 // thumb: مسیر عکس کم‌حجم (داخل public/thumbs/)
@@ -654,6 +661,7 @@ let lbIdx=0;
 
 // ── INIT ───────────────────────────────────
 window.addEventListener('load',()=>{
+setAppHeight();
   const nm=document.getElementById('iname');
   const sb=document.getElementById('isub');
   const intro=document.getElementById('intro');
