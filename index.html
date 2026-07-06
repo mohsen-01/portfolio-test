@@ -938,11 +938,10 @@ async function openCat(ci){
   document.getElementById('tb-sep').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
-gallery.scrollTo({
-    top:0,
-    behavior:"instant"
-});
+const gallery=document.getElementById('pg-gallery');
+gallery.scrollTop=0;
   await renderGrid(filtItems);
+  
   showPg('gallery',false); // false = no topbar reset (handled here)
 history.pushState(
     {page:'gallery',cat:ci},
