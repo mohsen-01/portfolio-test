@@ -61,17 +61,28 @@ html,body{
   backdrop-filter:blur(12px);
   -webkit-backdrop-filter:blur(12px);
 }
-#tb-left{display:flex;align-items:center;gap:16px;flex:1}
+#tb-left{display:flex;align-items:center;gap:8px;flex:1}
 #tb-back{
-  display:none;background:none;border:none;cursor:pointer;
-  font-size:18px;color:var(--gray);font-family:var(--f);
-  padding:0;transition:color .2s;line-height:1;
+     display:none;
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:var(--gray);
+    transition:color .25s;
 }
 #tb-back:hover{color:var(--text)}
+#tb-sep{
+    display:none;
+    color:var(--gray);
+    font-size:11px;
+    letter-spacing:.18em;
+}
 #tb-cat{
   display:none;
-  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--text);
+    color:var(--text);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
 }
 #tb-name{
   margin-left:auto;
@@ -376,6 +387,7 @@ transition:opacity .4s ease;
 <div id="topbar">
   <div id="tb-left">
     <button id="tb-back" onclick="goHome()">‹ HOME</button>
+	<span id="tb-sep"> / </span>
     <span id="tb-cat"></span>
   </div>
   <span id="tb-name">Mohsen-01</span>
@@ -923,6 +935,7 @@ async function openCat(ci){
 
   // topbar
   document.getElementById('tb-back').style.display='block';
+  document.getElementById('tb-sep').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
 
@@ -1071,6 +1084,7 @@ function showPg(name, resetTopbar=true){
   if(name!=='gallery') document.getElementById('pg-'+name).scrollTop=0;
   if(resetTopbar){
     document.getElementById('tb-back').style.display='none';
+	document.getElementById('tb-sep').style.display='none';
     document.getElementById('tb-cat').style.display='none';
   }
   closeSB();
