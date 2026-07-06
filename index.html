@@ -938,8 +938,7 @@ async function openCat(ci){
   document.getElementById('tb-sep').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
-const gallery=document.getElementById('pg-gallery');
-gallery.scrollTop=0;
+
   await renderGrid(filtItems);
   
   showPg('gallery',false); // false = no topbar reset (handled here)
@@ -1038,7 +1037,10 @@ img.onerror = () => resolve({
   // fade in
   requestAnimationFrame(() => requestAnimationFrame(() => { grid.style.opacity='1'; }));
 }
-
+gallery.scrollTo({
+    top:0,
+    behavior:"instant"
+});
 // ── GO HOME with cinematic back transition ──
 function goHome(){
 
