@@ -117,9 +117,20 @@ html,body{
 }
 #sidebar.open{transform:translateX(0)}
 .sb-brand{
-  font-family:var(--fd);
-  font-size:15px;letter-spacing:.3em;text-transform:uppercase;
-  margin-bottom:52px;color:var(--text);
+  margin-bottom:52px;
+}
+.sb-logo{
+  display:block;
+  max-height:38px;
+  max-width:150px;
+  object-fit:contain;
+}
+.about-logo{
+  display:block;
+  max-height:56px;
+  max-width:220px;
+  object-fit:contain;
+  margin-bottom:28px;
 }
 #sidebar nav{display:flex;flex-direction:column;gap:4px}
 #sidebar nav a{
@@ -182,8 +193,8 @@ html,body{
   border-radius:10px;
 }
 
-.sl{position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease}
-.sl.on{opacity:1}
+.sl{position:absolute;inset:0;opacity:0;z-index:1;will-change:transform}
+.sl.on{opacity:1;z-index:2}
 .sl img{
   width:100%;height:100%;
   object-fit:cover;
@@ -398,7 +409,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-  <div class="sb-brand">FanStudio</div>
+  <div class="sb-brand"><img src="public/logo.png" alt="FanStudio" class="sb-logo"/></div>
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -434,6 +445,7 @@ transition:opacity .4s ease;
   <!-- ABOUT -->
   <div id="pg-about" class="pg">
     <div class="pg-inner">
+      <img src="public/logo.png" alt="FanStudio" class="about-logo"/>
       <h1 class="pg-ttl">Mohsen 01</h1>
       <p class="bio">Commercial photographer and visual storyteller based in Iran. Specialized in creating premium visual content for brands, products, and editorial clients through FanStudio.</p>
       <div class="a-cols">
@@ -777,6 +789,66 @@ const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', a
   {c:'7/13', r:'6/7'},
 ]};
 
+// ── TILE MEDIA (random start + directional slide/roll transitions) ─
+// Builds all slide elements for a tile (photo or video), starts on a
+// random slide (not always the first), and on each interval rolls to a
+// random different slide using a random direction (up/down/left/right).
+function buildTileMedia(tile,cat,tileIndex){
+  const items=cat.items.slice(0,6);
+  if(items.length===0)return;
+
+  const slides=items.map(item=>{
+    const isVideo = item.type==='video' || /\.(mp4|mov|webm)$/i.test(item.thumb||'');
+    const s=document.createElement('div');
+    s.className='sl';
+    if(isVideo){
+      s.innerHTML=`<video src="public/${item.thumb}" autoplay loop muted playsinline></video>`;
+    } else {
+      s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
+    }
+    tile.appendChild(s);
+    return s;
+  });
+
+  // randomized starting slide — not always the first item
+  let curIdx=Math.floor(Math.random()*slides.length);
+  slides[curIdx].classList.add('on');
+  slides[curIdx].style.transform='translate(0,0)';
+
+  if(slides.length<2)return;
+
+  const DIRS=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+
+  setInterval(()=>{
+    let nextIdx;
+    do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
+    const d=DIRS[Math.floor(Math.random()*DIRS.length)];
+    const outEl=slides[curIdx], inEl=slides[nextIdx];
+
+    // position incoming slide off-screen in the roll direction, no transition
+    inEl.style.transition='none';
+    inEl.style.transform=`translate(${d.x*100}%, ${d.y*100}%)`;
+    inEl.classList.add('on');
+    void inEl.offsetWidth; // force reflow
+
+    // animate both: incoming rolls to center, outgoing rolls out the opposite side
+    inEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
+    outEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
+    requestAnimationFrame(()=>{
+      inEl.style.transform='translate(0,0)';
+      outEl.style.transform=`translate(${-d.x*100}%, ${-d.y*100}%)`;
+    });
+
+    setTimeout(()=>{
+      outEl.classList.remove('on');
+      outEl.style.transition='none';
+      outEl.style.transform='translate(0,0)';
+    },870);
+
+    curIdx=nextIdx;
+  },5000+tileIndex*350);
+}
+
 // ── BUILD METRO ────────────────────────────
 // saved layout — set once on load, reused on back
 let _savedTpl = null;
@@ -819,59 +891,7 @@ function buildMetro(reuse=false){
     tile.style.gridColumn=area.c;
     tile.style.gridRow=area.r;
 
-    // for Motion category: show looping video in tile
-    const isMotion=cat.id==='motion';
-    if(isMotion && cat.items[0]){
-      const s=document.createElement('div');
-      s.className='sl on';
-      const thumb=cat.items[0].thumb;
-      if(thumb && thumb.match(/\.(mp4|mov|webm)$/i)){
-        s.innerHTML=`<video src="public/${thumb}" autoplay loop muted playsinline></video>`;
-      } else {
-        s.innerHTML=`<img src="public/${thumb}" loading="lazy" alt="${cat.title}"/>`;
-      }
-      tile.appendChild(s);
-    } else {
-      // slides — support both jpg and mp4 thumbs
-      const isMotionCat = cat.items.some(it => it.type === 'video');
-
-      if(isMotionCat){
-        // video: single element, swap src on interval
-        const s = document.createElement('div');
-        s.className = 'sl on';
-        const vidEl = document.createElement('video');
-        vidEl.autoplay=true; vidEl.loop=true; vidEl.muted=true; vidEl.playsInline=true;
-        vidEl.style.cssText='width:100%;height:100%;object-fit:cover;filter:brightness(.5)';
-        vidEl.src = 'public/' + cat.items[0].thumb;
-        s.appendChild(vidEl);
-        tile.appendChild(s);
-        if(cat.items.length > 1){
-          let vi = 0;
-          setInterval(()=>{
-            vi = (vi+1) % cat.items.length;
-            vidEl.src = 'public/' + cat.items[vi].thumb;
-            vidEl.play();
-          }, 6000 + i*400);
-        }
-      } else {
-        // photo: opacity slideshow
-        cat.items.slice(0,5).forEach((item,ii)=>{
-          const s=document.createElement('div');
-          s.className='sl'+(ii===0?' on':'');
-          s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
-          tile.appendChild(s);
-        });
-        if(cat.items.length>1){
-          let idx=0;
-          setInterval(()=>{
-            const ss=tile.querySelectorAll('.sl');
-            ss[idx].classList.remove('on');
-            idx=(idx+1)%ss.length;
-            ss[idx].classList.add('on');
-          },5000+i*350);
-        }
-      }
-    }
+    buildTileMedia(tile,cat,i);
 
     const lbl=document.createElement('div');
     lbl.className='tile-lbl';
