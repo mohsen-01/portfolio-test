@@ -763,16 +763,18 @@ const TEMPLATES = [
   ]},
 ];
 
-// mobile: 2-col, 4 rows
-const MOBILE_TEMPLATE = { rows:4, areas:[
-  {c:'1/7', r:'1/2'},
-  {c:'7/13',r:'1/2'},
-  {c:'1/7', r:'2/3'},
-  {c:'7/13',r:'2/3'},
-  {c:'1/7', r:'3/4'},
-  {c:'7/13',r:'3/4'},
-  {c:'1/7', r:'4/5'},
-  {c:'7/13',r:'4/5'},
+// mobile: fixed "metro-style" layout — a hero tile, one tall tile, rest small.
+// Uses the same 12-col grid as desktop, split into a left/right half per row.
+// rowTemplate makes the hero's two rows smaller (~1.5x a normal tile instead of 2x).
+const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', areas:[
+  {c:'1/13', r:'1/3'},  // hero — full width, ~1.5x height
+  {c:'1/7',  r:'3/4'},
+  {c:'7/13', r:'3/4'},
+  {c:'1/7',  r:'4/6'},  // tall left
+  {c:'7/13', r:'4/5'},
+  {c:'7/13', r:'5/6'},
+  {c:'1/7',  r:'6/7'},
+  {c:'7/13', r:'6/7'},
 ]};
 
 // ── BUILD METRO ────────────────────────────
@@ -795,12 +797,19 @@ function buildMetro(reuse=false){
   const isMobile=window.innerWidth<=700;
   if(!reuse || !_savedTpl){
     _savedTpl = isMobile ? MOBILE_TEMPLATE : TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-    _savedCats = shuffle([...DATA]);
+    if(isMobile){
+      // pin Observations to the hero tile (its name is long and gets clipped in small tiles)
+      const obs = DATA.find(c=>c.id==='observations');
+      const rest = shuffle(DATA.filter(c=>c.id!=='observations'));
+      _savedCats = obs ? [obs, ...rest] : shuffle([...DATA]);
+    } else {
+      _savedCats = shuffle([...DATA]);
+    }
   }
   const tpl = _savedTpl;
   const cats = _savedCats;
 
-  metro.style.gridTemplateRows=`repeat(${tpl.rows},1fr)`;
+  metro.style.gridTemplateRows = tpl.rowTemplate ? tpl.rowTemplate : `repeat(${tpl.rows},1fr)`;
 
   cats.forEach((cat,i)=>{
     if(i>7)return; // max 8 tiles
