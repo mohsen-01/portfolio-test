@@ -411,7 +411,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-  <div class="sb-brand"><img src="public/logo.svg" alt="FanStudio" class="sb-logo"/></div>
+
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -793,9 +793,11 @@ const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', a
 
 // ── TILE MEDIA (random start + directional slide/roll transitions) ─
 // Builds all slide elements for a tile (photo or video), starts on a
-// random slide (not always the first), and on each interval rolls to a
-// random different slide using a random direction (up/down/left/right).
-function buildTileMedia(tile,cat,tileIndex){
+// random slide (not always the first). Each tile then rolls to a random
+// different slide on its own randomized timer (random direction too),
+// so tiles change independently — the random per-tile delay keeps them
+// from ever bunching up and changing all together.
+function buildTileMedia(tile,cat){
   const items=cat.items.slice(0,6);
   if(items.length===0)return;
 
@@ -821,19 +823,17 @@ function buildTileMedia(tile,cat,tileIndex){
 
   const DIRS=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
 
-  setInterval(()=>{
+  function roll(){
     let nextIdx;
     do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
     const d=DIRS[Math.floor(Math.random()*DIRS.length)];
     const outEl=slides[curIdx], inEl=slides[nextIdx];
 
-    // position incoming slide off-screen in the roll direction, no transition
     inEl.style.transition='none';
     inEl.style.transform=`translate(${d.x*100}%, ${d.y*100}%)`;
     inEl.classList.add('on');
     void inEl.offsetWidth; // force reflow
 
-    // animate both: incoming rolls to center, outgoing rolls out the opposite side
     inEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
     outEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
     requestAnimationFrame(()=>{
@@ -848,7 +848,17 @@ function buildTileMedia(tile,cat,tileIndex){
     },870);
 
     curIdx=nextIdx;
-  },8500+tileIndex*350);
+  }
+
+  function scheduleNext(delay){
+    setTimeout(()=>{
+      roll();
+      scheduleNext(5000+Math.random()*3000); // next change: random 5-8s
+    },delay);
+  }
+
+  // first change per tile: random 4-8s — staggers the initial start
+  scheduleNext(4000+Math.random()*4000);
 }
 
 // ── BUILD METRO ────────────────────────────
@@ -893,7 +903,7 @@ function buildMetro(reuse=false){
     tile.style.gridColumn=area.c;
     tile.style.gridRow=area.r;
 
-    buildTileMedia(tile,cat,i);
+    buildTileMedia(tile,cat);
 
     const lbl=document.createElement('div');
     lbl.className='tile-lbl';
