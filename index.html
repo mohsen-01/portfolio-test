@@ -411,7 +411,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-
+  
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -517,6 +517,15 @@ function setAppHeight() {
 }
 
 window.addEventListener('resize', setAppHeight);
+
+// fallback: some mobile browsers block autoplay entirely until the user
+// interacts with the page — retry any still-paused metro videos then
+function kickAutoplayVideos(){
+  document.querySelectorAll('#metro video').forEach(v=>{
+    if(v.paused){ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); }
+  });
+}
+['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
 // ══════════════════════════════════════════════════════
 // DATA — اینجا عکس‌ها رو اضافه کن
 // thumb: مسیر عکس کم‌حجم (داخل public/thumbs/)
@@ -805,12 +814,17 @@ function buildTileMedia(tile,cat){
     const isVideo = item.type==='video' || /\.(mp4|mov|webm)$/i.test(item.thumb||'');
     const s=document.createElement('div');
     s.className='sl';
+    tile.appendChild(s);
     if(isVideo){
-      s.innerHTML=`<video src="public/${item.thumb}" autoplay loop muted playsinline></video>`;
+      s.innerHTML=`<video src="public/${item.thumb}" autoplay loop muted playsinline webkit-playsinline="true"></video>`;
+      const v=s.querySelector('video');
+      const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
+      tryPlay();
+      v.addEventListener('loadeddata',tryPlay);
+      v.addEventListener('canplay',tryPlay);
     } else {
       s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
     }
-    tile.appendChild(s);
     return s;
   });
 
