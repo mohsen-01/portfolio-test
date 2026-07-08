@@ -420,7 +420,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-  
+
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -817,15 +817,19 @@ const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', a
   {c:'7/13', r:'6/7'},
 ]};
 
-// ── TILE MEDIA (progressive load + random slide/roll transitions) ─
-// Builds slide elements for a tile (photo or video). Only 2 slides load
-// immediately so the homepage comes up fast; the rest (up to 6) are
-// added quietly a couple seconds later. Videos don't get a src (so they
-// don't download) until the moment they're about to be shown. Starts on
-// a random slide, then rolls to a random different one on its own
-// randomized timer — staggered per tile so tiles never change together.
+// ── TILE MEDIA (staged load + random slide/roll transitions) ─
+// Builds slide elements for a tile (photo or video). Photo tiles load
+// their first 3 slides right away, then a second batch of up to 3 more
+// a few seconds later — every slide is loaded (given a real src) the
+// moment it's created, so nothing goes black waiting on its turn to
+// roll in. Motion tiles just load all 3 videos up front (that's the
+// whole category). Starts on a random slide, then rolls to a random
+// different one on its own randomized timer — staggered per tile so
+// tiles never change together.
 function buildTileMedia(tile,cat){
-  const allItems=cat.items.slice(0,6);
+  const isVideoCat = cat.items.some(it=>it.type==='video');
+  const cap = isVideoCat ? 3 : 6;
+  const allItems=cat.items.slice(0,cap);
   if(allItems.length===0)return;
 
   const slides=[];
@@ -836,43 +840,33 @@ function buildTileMedia(tile,cat){
     s.className='sl';
     tile.appendChild(s);
     if(isVideo){
-      s.innerHTML=`<video loop muted playsinline webkit-playsinline="true" data-src="public/${item.thumb}"></video>`;
+      s.innerHTML=`<video src="public/${item.thumb}" loop muted playsinline webkit-playsinline="true"></video>`;
+      const v=s.querySelector('video');
+      const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
+      tryPlay();
+      v.addEventListener('loadeddata',tryPlay);
+      v.addEventListener('canplay',tryPlay);
     } else {
-      s.innerHTML=`<img loading="lazy" data-src="public/${item.thumb}" alt="${cat.title}"/>`;
+      s.innerHTML=`<img src="public/${item.thumb}" alt="${cat.title}"/>`;
     }
     slides.push(s);
     return s;
   }
 
-  // load the media for a slide only once it's actually about to be shown
-  function activate(s){
-    const media=s.querySelector('img,video');
-    if(media && !media.src && media.dataset.src){
-      media.src=media.dataset.src;
-      if(media.tagName==='VIDEO'){
-        const tryPlay=()=>{ const p=media.play(); if(p&&p.catch)p.catch(()=>{}); };
-        tryPlay();
-        media.addEventListener('loadeddata',tryPlay);
-        media.addEventListener('canplay',tryPlay);
-      }
-    }
-  }
-
-  // build only the first 2 slides right away — keeps first load fast
-  const eagerCount=Math.min(2,allItems.length);
+  // first batch loads right away
+  const eagerCount=Math.min(3,allItems.length);
   for(let i=0;i<eagerCount;i++) makeSlide(allItems[i]);
 
   // randomized starting slide — not always the first item
   let curIdx=Math.floor(Math.random()*slides.length);
-  activate(slides[curIdx]);
   slides[curIdx].classList.add('on');
   slides[curIdx].style.transform='translate(0,0)';
 
-  // add the rest of this tile's slides quietly once the page has settled
+  // second batch (photo tiles only) loads a few seconds later, already fully loaded by the time it's needed
   if(allItems.length>eagerCount){
     setTimeout(()=>{
       for(let i=eagerCount;i<allItems.length;i++) makeSlide(allItems[i]);
-    },2500+Math.random()*1500);
+    },3000+Math.random()*1500);
   }
 
   if(allItems.length<2)return;
@@ -883,7 +877,6 @@ function buildTileMedia(tile,cat){
     if(slides.length<2)return; // extra slides haven't loaded in yet
     let nextIdx;
     do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
-    activate(slides[nextIdx]);
     const d=DIRS[Math.floor(Math.random()*DIRS.length)];
     const outEl=slides[curIdx], inEl=slides[nextIdx];
 
