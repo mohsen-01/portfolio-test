@@ -26,6 +26,14 @@ html,body{
   background:var(--bg);color:var(--text);
   font-family:var(--f);font-weight:300;
 }
+img,video{
+  -webkit-user-drag:none;
+  -khtml-user-drag:none;
+  -moz-user-drag:none;
+  -o-user-drag:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
 
 /* ══ INTRO ══ */
 #intro{
@@ -296,6 +304,7 @@ html,body{
 opacity:0;
 pointer-events:none;
 transition:opacity .35s ease;align-items:center;justify-content:center;
+touch-action:none;
 }
 #lb.on{
 opacity:1;
@@ -518,11 +527,19 @@ function setAppHeight() {
 
 window.addEventListener('resize', setAppHeight);
 
+// prevent easy copying — block right-click / drag-and-drop on images & videos
+document.addEventListener('contextmenu', e=>{
+  if(e.target.tagName==='IMG'||e.target.tagName==='VIDEO') e.preventDefault();
+});
+document.addEventListener('dragstart', e=>{
+  if(e.target.tagName==='IMG'||e.target.tagName==='VIDEO') e.preventDefault();
+});
+
 // fallback: some mobile browsers block autoplay entirely until the user
 // interacts with the page — retry any still-paused metro videos then
 function kickAutoplayVideos(){
   document.querySelectorAll('#metro video').forEach(v=>{
-    if(v.paused){ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); }
+    if(v.paused && v.src){ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); }
   });
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
@@ -800,46 +817,73 @@ const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', a
   {c:'7/13', r:'6/7'},
 ]};
 
-// ── TILE MEDIA (random start + directional slide/roll transitions) ─
-// Builds all slide elements for a tile (photo or video), starts on a
-// random slide (not always the first). Each tile then rolls to a random
-// different slide on its own randomized timer (random direction too),
-// so tiles change independently — the random per-tile delay keeps them
-// from ever bunching up and changing all together.
+// ── TILE MEDIA (progressive load + random slide/roll transitions) ─
+// Builds slide elements for a tile (photo or video). Only 2 slides load
+// immediately so the homepage comes up fast; the rest (up to 6) are
+// added quietly a couple seconds later. Videos don't get a src (so they
+// don't download) until the moment they're about to be shown. Starts on
+// a random slide, then rolls to a random different one on its own
+// randomized timer — staggered per tile so tiles never change together.
 function buildTileMedia(tile,cat){
-  const items=cat.items.slice(0,6);
-  if(items.length===0)return;
+  const allItems=cat.items.slice(0,6);
+  if(allItems.length===0)return;
 
-  const slides=items.map(item=>{
+  const slides=[];
+
+  function makeSlide(item){
     const isVideo = item.type==='video' || /\.(mp4|mov|webm)$/i.test(item.thumb||'');
     const s=document.createElement('div');
     s.className='sl';
     tile.appendChild(s);
     if(isVideo){
-      s.innerHTML=`<video src="public/${item.thumb}" autoplay loop muted playsinline webkit-playsinline="true"></video>`;
-      const v=s.querySelector('video');
-      const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
-      tryPlay();
-      v.addEventListener('loadeddata',tryPlay);
-      v.addEventListener('canplay',tryPlay);
+      s.innerHTML=`<video loop muted playsinline webkit-playsinline="true" data-src="public/${item.thumb}"></video>`;
     } else {
-      s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
+      s.innerHTML=`<img loading="lazy" data-src="public/${item.thumb}" alt="${cat.title}"/>`;
     }
+    slides.push(s);
     return s;
-  });
+  }
+
+  // load the media for a slide only once it's actually about to be shown
+  function activate(s){
+    const media=s.querySelector('img,video');
+    if(media && !media.src && media.dataset.src){
+      media.src=media.dataset.src;
+      if(media.tagName==='VIDEO'){
+        const tryPlay=()=>{ const p=media.play(); if(p&&p.catch)p.catch(()=>{}); };
+        tryPlay();
+        media.addEventListener('loadeddata',tryPlay);
+        media.addEventListener('canplay',tryPlay);
+      }
+    }
+  }
+
+  // build only the first 2 slides right away — keeps first load fast
+  const eagerCount=Math.min(2,allItems.length);
+  for(let i=0;i<eagerCount;i++) makeSlide(allItems[i]);
 
   // randomized starting slide — not always the first item
   let curIdx=Math.floor(Math.random()*slides.length);
+  activate(slides[curIdx]);
   slides[curIdx].classList.add('on');
   slides[curIdx].style.transform='translate(0,0)';
 
-  if(slides.length<2)return;
+  // add the rest of this tile's slides quietly once the page has settled
+  if(allItems.length>eagerCount){
+    setTimeout(()=>{
+      for(let i=eagerCount;i<allItems.length;i++) makeSlide(allItems[i]);
+    },2500+Math.random()*1500);
+  }
+
+  if(allItems.length<2)return;
 
   const DIRS=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
 
   function roll(){
+    if(slides.length<2)return; // extra slides haven't loaded in yet
     let nextIdx;
     do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
+    activate(slides[nextIdx]);
     const d=DIRS[Math.floor(Math.random()*DIRS.length)];
     const outEl=slides[curIdx], inEl=slides[nextIdx];
 
@@ -983,7 +1027,9 @@ function zoomTransition(tile,catIdx){
 }
 
 // ── OPEN CATEGORY ──────────────────────────
+let _catGen=0;
 async function openCat(ci, fromPop=false){
+  const myGen=++_catGen;
   curCat=ci;
   const cat=DATA[ci];
   filtItems=[...cat.items];
@@ -994,8 +1040,9 @@ async function openCat(ci, fromPop=false){
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
 
-  await renderGrid(filtItems);
-  
+  await renderGrid(filtItems,myGen);
+  if(myGen!==_catGen)return; // a newer category was opened while this one was still loading
+
   setTimeout(()=>{
     document.getElementById('pg-gallery').scrollTop = 0;
 },0);
@@ -1012,7 +1059,7 @@ async function openCat(ci, fromPop=false){
 }
 
 // ── JUSTIFIED GRID (masonry columns) ──────
-async function renderGrid(items){
+async function renderGrid(items,myGen){
   const grid = document.getElementById('photo-grid');
   grid.className = 'photo-grid';
   grid.innerHTML = '';
@@ -1054,6 +1101,8 @@ img.onerror = () => resolve({
 });
     img.src = 'public/' + item.thumb;
   })));
+
+  if(myGen!==undefined && myGen!==_catGen)return; // a different category was opened meanwhile — discard this stale result
 
   // 2. masonry columns
   const W    = window.innerWidth;
@@ -1198,6 +1247,7 @@ function closeSB(){
 // ── LIGHTBOX ───────────────────────────────
 function openLb(i){
   lbIdx=i;renderLb();
+  if(window.__lbResetZoom)window.__lbResetZoom(false);
   const lb=document.getElementById('lb');
 
 lb.animate(
@@ -1295,8 +1345,30 @@ function closeLb(){
 
 }
 function lbNav(d){
-  lbIdx=(lbIdx+d+filtItems.length)%filtItems.length;
-  renderLb();
+  const stageEls=[document.getElementById('lb-img'),document.getElementById('lb-thumb'),document.getElementById('lb-vid')];
+  if(window.__lbResetZoom)window.__lbResetZoom(false);
+
+  // slide the current content out
+  stageEls.forEach(el=>{
+    el.style.transition='transform .22s cubic-bezier(.4,0,.2,1)';
+    el.style.transform=`translateX(${d>0?-40:40}px)`;
+  });
+
+  setTimeout(()=>{
+    lbIdx=(lbIdx+d+filtItems.length)%filtItems.length;
+    renderLb();
+
+    // position new content on the opposite side, then slide it in
+    stageEls.forEach(el=>{
+      el.style.transition='none';
+      el.style.transform=`translateX(${d>0?40:-40}px)`;
+    });
+    void stageEls[0].offsetWidth; // force reflow
+    stageEls.forEach(el=>{
+      el.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
+      el.style.transform='translateX(0)';
+    });
+  },180);
 }
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('lb').classList.contains('on'))return;
@@ -1311,22 +1383,85 @@ document.getElementById('lb').addEventListener('click',e=>{
   if(e.target===e.currentTarget)closeLb();
 });
 
-// swipe navigation (touch)
+// pinch-to-zoom + pan + swipe-navigation for the lightbox image
 (function(){
   const lb=document.getElementById('lb');
-  let sx=0, sy=0, tracking=false;
+  const img=document.getElementById('lb-img');
+  let scale=1, panX=0, panY=0;
+  let pinchStartDist=0, pinchStartScale=1;
+  let isPinching=false, isPanning=false;
+  let panStartX=0, panStartY=0, startPanX=0, startPanY=0;
+  let swipeStartX=0, swipeStartY=0;
+  let lastTap=0;
+
+  function applyTransform(smooth){
+    img.style.transition = smooth ? 'opacity .4s ease, transform .25s ease' : 'opacity .4s ease';
+    img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    if(smooth) setTimeout(()=>{ img.style.transition='opacity .4s ease'; },250);
+  }
+  function resetZoom(smooth){
+    scale=1; panX=0; panY=0;
+    applyTransform(smooth!==false);
+  }
+  window.__lbResetZoom = resetZoom;
+
+  function dist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
+
   lb.addEventListener('touchstart',e=>{
-    if(e.touches.length!==1)return;
-    sx=e.touches[0].clientX;
-    sy=e.touches[0].clientY;
-    tracking=true;
+    if(e.touches.length===2){
+      isPinching=true; isPanning=false;
+      pinchStartDist=dist(e.touches[0],e.touches[1]);
+      pinchStartScale=scale;
+      return;
+    }
+    if(e.touches.length===1){
+      const t=e.touches[0];
+      if(scale>1){
+        isPanning=true;
+        panStartX=t.clientX; panStartY=t.clientY;
+        startPanX=panX; startPanY=panY;
+      } else {
+        swipeStartX=t.clientX; swipeStartY=t.clientY;
+      }
+      const now=Date.now();
+      if(now-lastTap<300){
+        if(scale>1){ resetZoom(true); }
+        else { scale=2.4; applyTransform(true); }
+        isPanning=false;
+      }
+      lastTap=now;
+    }
   },{passive:true});
+
+  lb.addEventListener('touchmove',e=>{
+    if(isPinching && e.touches.length===2){
+      e.preventDefault();
+      const d=dist(e.touches[0],e.touches[1]);
+      scale=Math.min(4,Math.max(1,pinchStartScale*(d/pinchStartDist)));
+      applyTransform(false);
+    } else if(isPanning && e.touches.length===1){
+      e.preventDefault();
+      const t=e.touches[0];
+      panX=startPanX+(t.clientX-panStartX);
+      panY=startPanY+(t.clientY-panStartY);
+      applyTransform(false);
+    }
+  },{passive:false});
+
   lb.addEventListener('touchend',e=>{
-    if(!tracking)return;
-    tracking=false;
-    const dx=e.changedTouches[0].clientX-sx;
-    const dy=e.changedTouches[0].clientY-sy;
-    // require a mostly-horizontal swipe of decent length
+    if(isPinching){
+      isPinching=false;
+      if(scale<1.02)resetZoom(true);
+      return;
+    }
+    if(isPanning){
+      isPanning=false;
+      return; // panning ends here — not a swipe
+    }
+    if(scale>1)return; // zoomed in — swipe-nav disabled, use drag to pan instead
+    if(e.touches.length>0)return;
+    const dx=e.changedTouches[0].clientX-swipeStartX;
+    const dy=e.changedTouches[0].clientY-swipeStartY;
     if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
       lbNav(dx<0?1:-1);
     }
