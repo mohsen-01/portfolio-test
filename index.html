@@ -420,7 +420,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-
+  <div class="sb-brand"><img src="public/logo.svg" alt="FanStudio" class="sb-logo"/></div>
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -710,6 +710,7 @@ let DATA=[];
 let curCat=0;
 let filtItems=[];
 let lbIdx=0;
+const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-probing video/image metadata on repeat visits
 
 // ── INIT ───────────────────────────────────
 window.addEventListener('load',()=>{
@@ -840,7 +841,7 @@ function buildTileMedia(tile,cat){
     s.className='sl';
     tile.appendChild(s);
     if(isVideo){
-      s.innerHTML=`<video src="public/${item.thumb}" loop muted playsinline webkit-playsinline="true"></video>`;
+      s.innerHTML=`<video src="public/${item.thumb}" loop muted playsinline webkit-playsinline="true" preload="auto"></video>`;
       const v=s.querySelector('video');
       const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
       tryPlay();
@@ -879,6 +880,9 @@ function buildTileMedia(tile,cat){
     do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
     const d=DIRS[Math.floor(Math.random()*DIRS.length)];
     const outEl=slides[curIdx], inEl=slides[nextIdx];
+
+    const inVid=inEl.querySelector('video');
+    if(inVid){ const p=inVid.play(); if(p&&p.catch)p.catch(()=>{}); }
 
     inEl.style.transition='none';
     inEl.style.transform=`translate(${d.x*100}%, ${d.y*100}%)`;
@@ -1058,8 +1062,14 @@ async function renderGrid(items,myGen){
   grid.innerHTML = '';
   grid.style.cssText = 'display:flex;gap:10px;padding:3px;align-items:flex-start;opacity:0;transition:opacity .5s ease';
 
-  // 1. detect ratios
+  // 1. detect ratios — cached per file so re-opening a category (e.g. Motion)
+  // doesn't re-probe video metadata every single time
 const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(resolve => {
+    const cached=_ratioCache.get(item.thumb);
+    if(cached){
+      resolve({...item, ...cached, originalIndex:index});
+      return;
+    }
     const isVthumb = item.thumb && /\.(mp4|mov|webm)$/i.test(item.thumb);
     if(isVthumb){
         // detect video ratio via HTMLVideoElement
@@ -1068,10 +1078,11 @@ const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(r
         v.preload = 'metadata';
         v.onloadedmetadata = () => {
           const r = v.videoWidth && v.videoHeight ? v.videoWidth/v.videoHeight : 1.25;
+          const result={ratio:r,isVthumb:true};
+          _ratioCache.set(item.thumb,result);
           resolve({
     ...item,
-    ratio:r,
-    isVthumb:true,
+    ...result,
     originalIndex:index
 });
         };
@@ -1080,12 +1091,15 @@ const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(r
         return;
       }
     const img = new Image();
-   img.onload = () => resolve({
+   img.onload = () => {
+    const result={ratio: img.naturalWidth / img.naturalHeight, isVthumb:false};
+    _ratioCache.set(item.thumb,result);
+    resolve({
     ...item,
-    ratio: img.naturalWidth / img.naturalHeight,
-    isVthumb: false,
+    ...result,
     originalIndex: index
 });
+};
 img.onerror = () => resolve({
     ...item,
     ratio: 1.25,
