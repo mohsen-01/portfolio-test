@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Mohsen-01 — Visual Creator</title>
+<link rel="icon" href="public/logo.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" href="public/logo.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
@@ -77,9 +79,6 @@ img,video{
     cursor:pointer;
     color:var(--gray);
     transition:color .25s;
-    font-size:11px;
-    letter-spacing:.22em;
-    text-transform:uppercase;
 }
 #tb-back:hover{color:var(--text)}
 #tb-sep{
@@ -331,6 +330,7 @@ clip-path:inset(0);
 #lb-img{
 opacity:0;
 transition:opacity .4s ease;
+cursor:zoom-in;
 }
 #lb-vid{max-width:90vw;max-height:88vh;display:none}
 .lb-x{
@@ -848,7 +848,8 @@ function buildTileMedia(tile,cat){
     s.className='sl';
     tile.appendChild(s);
     if(isVideo){
-      s.innerHTML=`<video src="public/${item.thumb}" loop muted playsinline webkit-playsinline="true" preload="auto"></video>`;
+      const posterPath = item.poster ? `public/${item.poster}` : `public/${item.thumb.replace(/\.(mp4|mov|webm)$/i,'.jpg')}`;
+      s.innerHTML=`<video src="public/${item.thumb}" poster="${posterPath}" loop muted playsinline webkit-playsinline="true" preload="auto"></video>`;
       const v=s.querySelector('video');
       const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
       tryPlay();
@@ -1142,7 +1143,8 @@ img.onerror = () => resolve({
 
     const origIdx = item.originalIndex;
     if(item.isVthumb){
-      card.innerHTML = `<video src="public/${item.thumb}" autoplay muted loop playsinline style="width:100%;height:${h}px;object-fit:cover;display:block;filter:brightness(.85)"></video><div class="pi-ov"><span>▶</span></div>`;
+      const posterPath = item.poster ? `public/${item.poster}` : `public/${item.thumb.replace(/\.(mp4|mov|webm)$/i,'.jpg')}`;
+      card.innerHTML = `<video src="public/${item.thumb}" poster="${posterPath}" autoplay muted loop playsinline style="width:100%;height:${h}px;object-fit:cover;display:block;filter:brightness(.85)"></video><div class="pi-ov"><span>▶</span></div>`;
     } else {
       card.innerHTML = `<img src="public/${item.thumb}" loading="lazy" style="width:100%;height:${h}px;object-fit:cover;display:block;filter:brightness(.85)"/><div class="pi-ov"><span>+</span></div>`;
     }
@@ -1411,6 +1413,7 @@ document.getElementById('lb').addEventListener('click',e=>{
   function applyTransform(smooth){
     img.style.transition = smooth ? 'opacity .4s ease, transform .25s ease' : 'opacity .4s ease';
     img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    img.style.cursor = scale>1 ? 'grab' : 'zoom-in';
     if(smooth) setTimeout(()=>{ img.style.transition='opacity .4s ease'; },250);
   }
   function resetZoom(smooth){
@@ -1480,6 +1483,35 @@ document.getElementById('lb').addEventListener('click',e=>{
       lbNav(dx<0?1:-1);
     }
   },{passive:true});
+
+  // desktop: click to zoom, drag to pan while zoomed
+  let mouseDown=false, dragMoved=false;
+  let mStartX=0, mStartY=0, mStartPanX=0, mStartPanY=0;
+
+  img.addEventListener('mousedown',e=>{
+    if(scale<=1)return;
+    mouseDown=true; dragMoved=false;
+    mStartX=e.clientX; mStartY=e.clientY;
+    mStartPanX=panX; mStartPanY=panY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!mouseDown)return;
+    const dx=e.clientX-mStartX, dy=e.clientY-mStartY;
+    if(Math.abs(dx)>3||Math.abs(dy)>3)dragMoved=true;
+    panX=mStartPanX+dx;
+    panY=mStartPanY+dy;
+    applyTransform(false);
+  });
+  window.addEventListener('mouseup',()=>{
+    if(mouseDown){ mouseDown=false; img.style.cursor=scale>1?'grab':'zoom-in'; }
+  });
+
+  img.addEventListener('click',()=>{
+    if(dragMoved){ dragMoved=false; return; }
+    if(scale>1){ resetZoom(true); }
+    else { scale=2.4; applyTransform(true); }
+  });
 })();
 window.addEventListener('popstate', e => {
 
