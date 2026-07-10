@@ -6,6 +6,7 @@
 <title>Mohsen-01 — Visual Creator</title>
 <link rel="icon" href="public/logo.svg" type="image/svg+xml"/>
 <link rel="apple-touch-icon" href="public/logo.svg"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
@@ -79,6 +80,7 @@ img,video{
     cursor:pointer;
     color:var(--gray);
     transition:color .25s;
+	font-size:11px;
     letter-spacing:.22em;
     text-transform:uppercase;
 }
@@ -549,169 +551,52 @@ function kickAutoplayVideos(){
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
 // ══════════════════════════════════════════════════════
-// DATA — اینجا عکس‌ها رو اضافه کن
-// thumb: مسیر عکس کم‌حجم (داخل public/thumbs/)
-// hq:    مسیر عکس با کیفیت بالا (داخل public/hq/)
+// DATA — از فایل data.xlsx خونده می‌شه (کنار همین index.html روی هاست بذارش)
+// شیت "Categories": ستون‌های Id, Title
+// هر شیت دیگه (اسمش = همون Id بالا): ستون‌های Number, Type, Ext, Caption, Year, Camera, Lens
+// Number = شماره فایل توی thumbs/<id>/ و hq/<id>/ (مثلاً 3 یعنی 03.jpg)
+// Ext خالی باشه یعنی پیش‌فرض: jpg برای photo، mp4 برای video
 // ══════════════════════════════════════════════════════
-const SITE_DATA = {
-  "categories": [
-    {
-      "id": "automotive", "title": "Automotive",
-      "items": [
-        { "thumb": "thumbs/automotive/01.jpg", "hq": "hq/automotive/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/02.jpg", "hq": "hq/automotive/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/03.jpg", "hq": "hq/automotive/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/04.jpg", "hq": "hq/automotive/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/05.jpg", "hq": "hq/automotive/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/06.jpg", "hq": "hq/automotive/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/automotive/07.jpg", "hq": "hq/automotive/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "event", "title": "Event",
-      "items": [
-        { "thumb": "thumbs/event/01.jpg", "hq": "hq/event/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/02.jpg", "hq": "hq/event/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/03.jpg", "hq": "hq/event/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/04.jpg", "hq": "hq/event/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/05.jpg", "hq": "hq/event/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/06.jpg", "hq": "hq/event/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/07.jpg", "hq": "hq/event/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/08.jpg", "hq": "hq/event/08.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        
-        { "thumb": "thumbs/event/10.jpg", "hq": "hq/event/10.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/11.jpg", "hq": "hq/event/11.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/12.jpg", "hq": "hq/event/12.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/13.jpg", "hq": "hq/event/13.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/14.jpg", "hq": "hq/event/14.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/15.jpg", "hq": "hq/event/15.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/16.jpg", "hq": "hq/event/16.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/17.jpg", "hq": "hq/event/17.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/18.jpg", "hq": "hq/event/18.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/19.jpg", "hq": "hq/event/19.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/20.jpg", "hq": "hq/event/20.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/event/21.jpg", "hq": "hq/event/21.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "fashion", "title": "Fashion",
-      "items": [
-        { "thumb": "thumbs/fashion/01.jpg", "hq": "hq/fashion/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/02.jpg", "hq": "hq/fashion/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/03.jpg", "hq": "hq/fashion/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/04.jpg", "hq": "hq/fashion/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/05.jpg", "hq": "hq/fashion/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/06.jpg", "hq": "hq/fashion/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/07.jpg", "hq": "hq/fashion/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/08.jpg", "hq": "hq/fashion/08.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/09.jpg", "hq": "hq/fashion/09.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/10.jpg", "hq": "hq/fashion/10.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/11.jpg", "hq": "hq/fashion/11.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/12.jpg", "hq": "hq/fashion/12.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/13.jpg", "hq": "hq/fashion/13.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/14.jpg", "hq": "hq/fashion/14.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/15.jpg", "hq": "hq/fashion/15.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/16.jpg", "hq": "hq/fashion/16.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/17.jpg", "hq": "hq/fashion/17.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
+async function loadSiteData(){
+  try{
+    const resp = await fetch('data.xlsx');
+    if(!resp.ok) throw new Error('data.xlsx not found ('+resp.status+')');
+    const buf = await resp.arrayBuffer();
+    const wb = XLSX.read(buf,{type:'array'});
 
-        { "thumb": "thumbs/fashion/19.jpg", "hq": "hq/fashion/19.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/20.jpg", "hq": "hq/fashion/20.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/21.jpg", "hq": "hq/fashion/21.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/22.jpg", "hq": "hq/fashion/22.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/23.jpg", "hq": "hq/fashion/23.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/24.jpg", "hq": "hq/fashion/24.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/25.jpg", "hq": "hq/fashion/25.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/26.jpg", "hq": "hq/fashion/26.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/27.jpg", "hq": "hq/fashion/27.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/fashion/28.jpg", "hq": "hq/fashion/28.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "food", "title": "Food",
-      "items": [
-        { "thumb": "thumbs/food/01.jpg", "hq": "hq/food/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/food/02.jpg", "hq": "hq/food/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/food/03.jpg", "hq": "hq/food/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/food/04.jpg", "hq": "hq/food/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/food/05.jpg", "hq": "hq/food/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "motion", "title": "Motion",
-      "items": [
-        { "thumb": "thumbs/motion/01.mp4", "hq": "hq/motion/01.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/motion/02.mp4", "hq": "hq/motion/02.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/motion/03.mp4", "hq": "hq/motion/03.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/motion/04.mp4", "hq": "hq/motion/04.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-		    { "thumb": "thumbs/motion/05.mp4", "hq": "hq/motion/05.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-		    { "thumb": "thumbs/motion/06.mp4", "hq": "hq/motion/06.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" },
-		    { "thumb": "thumbs/motion/07.mp4", "hq": "hq/motion/07.mp4", "type": "video", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "observations", "title": "Observations",
-      "items": [
-        { "thumb": "thumbs/observations/01.jpg", "hq": "hq/observations/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/02.jpg", "hq": "hq/observations/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/03.jpg", "hq": "hq/observations/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/04.jpg", "hq": "hq/observations/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/05.jpg", "hq": "hq/observations/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/06.jpg", "hq": "hq/observations/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/07.jpg", "hq": "hq/observations/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/08.jpg", "hq": "hq/observations/08.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/09.jpg", "hq": "hq/observations/09.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/10.jpg", "hq": "hq/observations/10.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/11.jpg", "hq": "hq/observations/11.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/12.jpg", "hq": "hq/observations/12.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/13.jpg", "hq": "hq/observations/13.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/14.jpg", "hq": "hq/observations/14.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/15.jpg", "hq": "hq/observations/15.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/16.jpg", "hq": "hq/observations/16.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/observations/17.jpg", "hq": "hq/observations/17.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "product", "title": "Product",
-      "items": [
-        { "thumb": "thumbs/product/01.jpg", "hq": "hq/product/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/02.jpg", "hq": "hq/product/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/03.jpg", "hq": "hq/product/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/04.jpg", "hq": "hq/product/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/05.jpg", "hq": "hq/product/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/06.jpg", "hq": "hq/product/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/07.jpg", "hq": "hq/product/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/08.jpg", "hq": "hq/product/08.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/09.jpg", "hq": "hq/product/09.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/10.jpg", "hq": "hq/product/10.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/11.jpg", "hq": "hq/product/11.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/12.png", "hq": "hq/product/12.png", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/13.jpg", "hq": "hq/product/13.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/14.jpg", "hq": "hq/product/14.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/15.jpg", "hq": "hq/product/15.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/16.jpg", "hq": "hq/product/16.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/17.jpg", "hq": "hq/product/17.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/18.jpg", "hq": "hq/product/18.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/19.jpg", "hq": "hq/product/19.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/product/20.jpg", "hq": "hq/product/20.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    },
-    {
-      "id": "space", "title": "Space",
-      "items": [
-        { "thumb": "thumbs/space/01.jpg", "hq": "hq/space/01.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/02.jpg", "hq": "hq/space/02.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/03.jpg", "hq": "hq/space/03.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/04.jpg", "hq": "hq/space/04.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/05.jpg", "hq": "hq/space/05.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/06.jpg", "hq": "hq/space/06.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/07.jpg", "hq": "hq/space/07.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/08.jpg", "hq": "hq/space/08.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/09.jpg", "hq": "hq/space/09.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" },
-        { "thumb": "thumbs/space/10.jpg", "hq": "hq/space/10.jpg", "type": "photo", "title": "", "year": "2026", "camera": "", "lens": "" }
-      ]
-    }
-  ]
-};
+    const catsSheet = wb.Sheets['Categories'];
+    if(!catsSheet) throw new Error('Categories sheet missing in data.xlsx');
+    const catsRows = XLSX.utils.sheet_to_json(catsSheet);
+
+    return catsRows.map(row=>{
+      const id = String(row.Id||'').trim();
+      const title = String(row.Title||id).trim();
+      const sheet = wb.Sheets[id];
+      const rows = sheet ? XLSX.utils.sheet_to_json(sheet) : [];
+
+      const items = rows.map(r=>{
+        const num = String(r.Number).padStart(2,'0');
+        const type = String(r.Type||'photo').toLowerCase()==='video' ? 'video' : 'photo';
+        const ext = (r.Ext && String(r.Ext).trim()) || (type==='video' ? 'mp4' : 'jpg');
+        return {
+          thumb: `thumbs/${id}/${num}.${ext}`,
+          hq: `hq/${id}/${num}.${ext}`,
+          type,
+          title: r.Caption ? String(r.Caption) : '',
+          year: r.Year ? String(r.Year) : '',
+          camera: r.Camera ? String(r.Camera) : '',
+          lens: r.Lens ? String(r.Lens) : ''
+        };
+      });
+
+      return {id, title, items};
+    });
+  }catch(err){
+    console.error('Failed to load data.xlsx:', err);
+    return [];
+  }
+}
+// ══════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════
 
 // ── state ──────────────────────────────────
@@ -729,13 +614,14 @@ setAppHeight();
   const intro=document.getElementById('intro');
   setTimeout(()=>{nm.classList.add('in');sb.classList.add('in')},150);
 
-  DATA=SITE_DATA.categories;
+  const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
 
-  setTimeout(()=>{
+  setTimeout(async ()=>{
     nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
     nm.style.transform='translateY(-24px)';
     nm.style.opacity='0';
     sb.style.opacity='0';
+    DATA = await dataPromise;
     buildMetro();
   },1500);
   setTimeout(()=>intro.classList.add('out'),1850);
