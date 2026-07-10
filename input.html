@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FanStudio — مدیریت محتوا</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:#0a0a0a;color:#fff;
+  padding:24px;
+  min-height:100vh;
+}
+h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.sub{color:#8c8c8c;font-size:13px;margin-bottom:24px}
+.bar{
+  display:flex;gap:10px;flex-wrap:wrap;
+  margin-bottom:24px;padding-bottom:20px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+button{
+  background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,.15);
+  padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;
+  transition:background .2s,border-color .2s;
+}
+button:hover{background:#252525;border-color:rgba(255,255,255,.3)}
+button.primary{background:#d8b25c;color:#000;border-color:#d8b25c;font-weight:600}
+button.primary:hover{background:#e8c46c}
+button.danger{color:#e57373}
+button.small{padding:5px 10px;font-size:12px}
+input[type=file]{display:none}
+
+.layout{display:flex;gap:20px;align-items:flex-start}
+.cats{
+  width:220px;flex-shrink:0;
+  background:#111;border-radius:10px;padding:12px;
+}
+.cats h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8c8c8c;margin-bottom:10px}
+.cat-item{
+  display:flex;align-items:center;gap:6px;
+  padding:9px 10px;border-radius:6px;cursor:pointer;margin-bottom:4px;
+  font-size:13px;
+}
+.cat-item:hover{background:#1a1a1a}
+.cat-item.act{background:#1e1e1e;border:1px solid rgba(216,178,92,.4)}
+.cat-item span.cnt{margin-right:auto;color:#666;font-size:11px}
+.cat-item input{
+  background:transparent;border:none;color:#fff;font-size:13px;width:100%;
+  outline:none;border-bottom:1px dashed transparent;
+}
+.cat-item input:focus{border-bottom-color:#d8b25c}
+.cat-item button{padding:2px 7px;font-size:11px}
+.add-cat{width:100%;margin-top:6px}
+
+.main{flex:1;background:#111;border-radius:10px;padding:20px;overflow-x:auto}
+.main h2{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.main h2 input{
+  background:#1a1a1a;border:1px solid rgba(255,255,255,.15);border-radius:6px;
+  color:#fff;padding:6px 10px;font-size:13px;
+}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:820px}
+th{
+  text-align:right;color:#8c8c8c;font-weight:500;font-size:11px;
+  letter-spacing:.05em;text-transform:uppercase;
+  padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);
+}
+td{padding:6px;border-bottom:1px solid rgba(255,255,255,.05)}
+td input,td select{
+  width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);
+  color:#fff;border-radius:5px;padding:6px 8px;font-size:12px;
+}
+td.num input{width:55px;text-align:center}
+td.year input{width:65px}
+td.del{width:34px}
+.empty{color:#666;font-size:13px;padding:30px 0;text-align:center}
+.hint{
+  background:#1a1a1a;border:1px solid rgba(216,178,92,.25);
+  border-radius:8px;padding:12px 14px;font-size:12px;color:#c9c9c9;
+  margin-bottom:18px;line-height:1.9;
+}
+.hint b{color:#d8b25c}
+.status{font-size:12px;color:#6bcf6b;margin-right:8px}
+
+@media(max-width:760px){
+  body{padding:14px}
+  h1{font-size:17px}
+  .sub{font-size:12px;margin-bottom:18px}
+  .bar{margin-bottom:18px;padding-bottom:16px}
+  .bar button{flex:1;min-width:130px}
+  .layout{flex-direction:column;gap:14px}
+  .cats{width:100%}
+  .main{padding:14px}
+  .main h2{flex-wrap:wrap}
+  table{min-width:700px}
+  td input,td select,.cat-item input{font-size:16px} /* avoids iOS auto-zoom on focus */
+  button{padding:11px 16px}
+}
+</style>
+</head>
+<body>
+
+<h1>FanStudio — مدیریت محتوا</h1>
+<div class="sub">این صفحه فقط برای خودته، به سایت اصلی وصل نیست. اطلاعات رو اینجا وارد کن، اکسل رو دانلود کن، و همون فایل رو روی هاست کنار index.html بذار.</div>
+
+<div class="hint">
+  <b>راهنما:</b> هر ردیف یعنی یک عکس یا ویدیو. عدد ردیف (Number) باید دقیقاً با اسم فایلی که توی پوشه‌ی <b>thumbs/دسته/</b> و <b>hq/دسته/</b> آپلود کردی یکی باشه (مثلاً عدد ۳ یعنی فایل <b>03.jpg</b>). پسوند رو خالی بذار تا خودکار jpg (برای عکس) یا mp4 (برای ویدیو) در نظر گرفته بشه؛ اگه فایلت png یا فرمت دیگه‌ست، توی ستون Ext بنویس.
+</div>
+
+<div class="bar">
+  <button class="primary" onclick="downloadExcel()">⬇ دانلود اکسل</button>
+  <button onclick="document.getElementById('fileInput').click()">⬆ بارگذاری اکسل قبلی</button>
+  <input type="file" id="fileInput" accept=".xlsx" onchange="loadExcelFile(event)"/>
+  <span class="status" id="status"></span>
+</div>
+
+<div class="layout">
+  <div class="cats">
+    <h2>دسته‌ها</h2>
+    <div id="catList"></div>
+    <button class="add-cat" onclick="addCategory()">+ دسته جدید</button>
+  </div>
+
+  <div class="main">
+    <div id="mainBody"></div>
+  </div>
+</div>
+
+<script>
+// ── state ──────────────────────────────────
+let categories = [];
+let activeIdx = 0;
+
+function range(a,b){ const r=[]; for(let i=a;i<=b;i++)r.push(i); return r; }
+
+function defaultRows(id, numbers){
+  const isVideo = id==='motion';
+  return numbers.map(n=>({
+    number:n,
+    type: isVideo?'video':'photo',
+    ext: (id==='product' && n===12) ? 'png' : '',
+    caption:'',
+    year:'2026',
+    camera:'',
+    lens:''
+  }));
+}
+
+function loadDefaults(){
+  categories = [
+    {id:'automotive',   title:'Automotive',   items: defaultRows('automotive', range(1,7))},
+    {id:'event',        title:'Event',        items: defaultRows('event', [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21])},
+    {id:'fashion',       title:'Fashion',      items: defaultRows('fashion', [...range(1,17), ...range(19,28)])},
+    {id:'food',          title:'Food',         items: defaultRows('food', range(1,5))},
+    {id:'motion',        title:'Motion',       items: defaultRows('motion', range(1,7))},
+    {id:'observations',  title:'Observations', items: defaultRows('observations', range(1,17))},
+    {id:'product',       title:'Product',      items: defaultRows('product', range(1,20))},
+    {id:'space',         title:'Space',        items: defaultRows('space', range(1,10))},
+  ];
+}
+
+// ── persistence (local draft only, doesn't touch the live site) ──
+function saveDraft(){
+  try{ localStorage.setItem('fanstudio_admin_draft', JSON.stringify(categories)); }catch(e){}
+  setStatus('ذخیره شد (پیش‌نویس محلی)');
+}
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem('fanstudio_admin_draft');
+    if(raw){ categories = JSON.parse(raw); return true; }
+  }catch(e){}
+  return false;
+}
+function setStatus(msg){
+  const el=document.getElementById('status');
+  el.textContent = msg;
+  setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; },2500);
+}
+
+// ── render ─────────────────────────────────
+function renderCatList(){
+  const el=document.getElementById('catList');
+  el.innerHTML='';
+  categories.forEach((cat,i)=>{
+    const row=document.createElement('div');
+    row.className='cat-item'+(i===activeIdx?' act':'');
+    row.innerHTML=`
+      <input value="${escapeAttr(cat.id)}" onchange="renameCatId(${i},this.value)" title="Id (اسم پوشه‌ها)" style="width:70px"/>
+      <span class="cnt">${cat.items.length}</span>
+      <button class="small danger" onclick="deleteCategory(${i})">✕</button>
+    `;
+    row.addEventListener('click',(e)=>{
+      if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON')return;
+      activeIdx=i; render();
+    });
+    el.appendChild(row);
+  });
+}
+
+function renderMain(){
+  const el=document.getElementById('mainBody');
+  const cat=categories[activeIdx];
+  if(!cat){ el.innerHTML='<div class="empty">دسته‌ای انتخاب نشده</div>'; return; }
+
+  let rowsHtml = cat.items.map((it,ri)=>`
+    <tr>
+      <td class="num"><input type="number" value="${it.number}" onchange="updateItem(${ri},'number',this.value)"/></td>
+      <td>
+        <select onchange="updateItem(${ri},'type',this.value)">
+          <option value="photo" ${it.type==='photo'?'selected':''}>عکس</option>
+          <option value="video" ${it.type==='video'?'selected':''}>ویدیو</option>
+        </select>
+      </td>
+      <td><input placeholder="jpg/mp4" value="${escapeAttr(it.ext)}" onchange="updateItem(${ri},'ext',this.value)"/></td>
+      <td><input value="${escapeAttr(it.caption)}" onchange="updateItem(${ri},'caption',this.value)"/></td>
+      <td class="year"><input value="${escapeAttr(it.year)}" onchange="updateItem(${ri},'year',this.value)"/></td>
+      <td><input value="${escapeAttr(it.camera)}" onchange="updateItem(${ri},'camera',this.value)"/></td>
+      <td><input value="${escapeAttr(it.lens)}" onchange="updateItem(${ri},'lens',this.value)"/></td>
+      <td class="del"><button class="small danger" onclick="deleteItem(${ri})">✕</button></td>
+    </tr>
+  `).join('');
+
+  el.innerHTML = `
+    <h2>عنوان نمایشی: <input value="${escapeAttr(cat.title)}" onchange="renameCatTitle(this.value)"/></h2>
+    <table>
+      <thead><tr>
+        <th>شماره</th><th>نوع</th><th>پسوند</th><th>کپشن</th><th>سال</th><th>دوربین</th><th>لنز</th><th></th>
+      </tr></thead>
+      <tbody>${rowsHtml || '<tr><td colspan="8" class="empty">هنوز ردیفی نیست</td></tr>'}</tbody>
+    </table>
+    <button class="small" style="margin-top:12px" onclick="addItem()">+ افزودن ردیف</button>
+  `;
+}
+
+function render(){ renderCatList(); renderMain(); }
+
+function escapeAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
+
+// ── mutations ──────────────────────────────
+function addCategory(){
+  categories.push({id:'new-category', title:'New Category', items:[]});
+  activeIdx=categories.length-1;
+  render(); saveDraft();
+}
+function deleteCategory(i){
+  if(!confirm('این دسته حذف بشه؟'))return;
+  categories.splice(i,1);
+  if(activeIdx>=categories.length)activeIdx=categories.length-1;
+  render(); saveDraft();
+}
+function renameCatId(i,val){
+  categories[i].id = val.trim();
+  saveDraft();
+}
+function renameCatTitle(val){
+  categories[activeIdx].title = val;
+  saveDraft();
+}
+function addItem(){
+  const cat=categories[activeIdx];
+  const maxNum = cat.items.reduce((m,it)=>Math.max(m,Number(it.number)||0),0);
+  cat.items.push({number:maxNum+1, type: cat.id==='motion'?'video':'photo', ext:'', caption:'', year:'2026', camera:'', lens:''});
+  render(); saveDraft();
+}
+function deleteItem(ri){
+  categories[activeIdx].items.splice(ri,1);
+  render(); saveDraft();
+}
+function updateItem(ri,field,val){
+  categories[activeIdx].items[ri][field]= field==='number' ? Number(val) : val;
+  saveDraft();
+}
+
+// ── excel export ───────────────────────────
+function downloadExcel(){
+  const wb = XLSX.utils.book_new();
+
+  const catsSheetData = categories.map(c=>({Id:c.id, Title:c.title}));
+  const catsSheet = XLSX.utils.json_to_sheet(catsSheetData);
+  XLSX.utils.book_append_sheet(wb, catsSheet, 'Categories');
+
+  categories.forEach(cat=>{
+    const rows = cat.items.map(it=>({
+      Number: it.number,
+      Type: it.type,
+      Ext: it.ext,
+      Caption: it.caption,
+      Year: it.year,
+      Camera: it.camera,
+      Lens: it.lens
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    // sheet names max 31 chars, no special chars
+    const safeName = cat.id.substring(0,31).replace(/[\\/?*[\]:]/g,'_') || 'sheet';
+    XLSX.utils.book_append_sheet(wb, sheet, safeName);
+  });
+
+  XLSX.writeFile(wb, 'data.xlsx');
+  setStatus('دانلود شد ✓');
+}
+
+// ── excel import ───────────────────────────
+function loadExcelFile(e){
+  const file = e.target.files[0];
+  if(!file)return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const catsSheet = wb.Sheets['Categories'];
+      if(!catsSheet){ alert('شیت Categories توی این فایل پیدا نشد.'); return; }
+      const catsRows = XLSX.utils.sheet_to_json(catsSheet);
+      const newCats = catsRows.map(row=>{
+        const id = String(row.Id||'').trim();
+        const title = String(row.Title||id).trim();
+        const sheet = wb.Sheets[id];
+        const rows = sheet ? XLSX.utils.sheet_to_json(sheet) : [];
+        const items = rows.map(r=>({
+          number: Number(r.Number)||0,
+          type: (r.Type||'photo').toLowerCase()==='video'?'video':'photo',
+          ext: r.Ext||'',
+          caption: r.Caption||'',
+          year: String(r.Year||''),
+          camera: r.Camera||'',
+          lens: r.Lens||''
+        }));
+        return {id, title, items};
+      });
+      categories = newCats;
+      activeIdx = 0;
+      render(); saveDraft();
+      setStatus('بارگذاری شد ✓');
+    }catch(err){
+      alert('خطا در خوندن فایل اکسل: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+}
+
+// ── init ───────────────────────────────────
+if(!loadDraft()) loadDefaults();
+render();
+</script>
+</body>
+</html>
