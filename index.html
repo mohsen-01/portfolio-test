@@ -61,6 +61,35 @@ img,video{
 }
 #isub.in{opacity:1}
 
+/* ══ APERTURE LOADER ══ (used in #intro and #trans) */
+.aperture-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  opacity:0;
+  animation:apFadeIn .6s ease .15s forwards;
+}
+@keyframes apFadeIn{to{opacity:1}}
+.aperture-svg{
+  width:clamp(90px,22vw,150px);
+  height:clamp(90px,22vw,150px);
+  overflow:visible;
+}
+.iris-shape{
+  fill:var(--bg);
+  stroke:var(--accent);
+  stroke-width:1.2;
+  transform-origin:100px 100px;
+  transform:scale(.16) rotate(26deg);
+  transition:transform 1.8s cubic-bezier(.65,0,.35,1);
+}
+.iris-shape.open{transform:scale(1) rotate(0deg)}
+.iris-shape.quick{transition-duration:.75s}
+.blade-seams line{stroke:rgba(255,255,255,.08);stroke-width:1}
+.fstop-readout{
+  font-family:'Inter',monospace;
+  font-size:12px;letter-spacing:.3em;
+  color:var(--accent);text-transform:uppercase;
+}
+
 /* ══ TOPBAR ══ */
 #topbar{
   position:fixed;top:0;left:0;right:0;height:var(--tb);
@@ -80,7 +109,6 @@ img,video{
     cursor:pointer;
     color:var(--gray);
     transition:color .25s;
-	font-size:11px;
     letter-spacing:.22em;
     text-transform:uppercase;
 }
@@ -248,7 +276,7 @@ img,video{
   position:fixed;inset:0;z-index:800;
   background:var(--bg);
   opacity:0;pointer-events:none;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   transition:opacity .35s ease;
 }
 #trans.fade-in{opacity:1}
@@ -405,6 +433,14 @@ cursor:zoom-in;
 <div id="intro">
   <div id="iname">Mohsen 01</div>
   <div id="isub">Visual Creator</div>
+  <div class="aperture-wrap">
+    <svg class="aperture-svg" id="intro-ap-svg" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(216,178,92,.3)" stroke-width="1.2"/>
+      <g class="blade-seams" id="intro-ap-seams"></g>
+      <polygon class="iris-shape" id="intro-ap-iris" points=""></polygon>
+    </svg>
+    <div class="fstop-readout" id="intro-ap-fstop">f/22</div>
+  </div>
 </div>
 
 <!-- HAMBURGER -->
@@ -442,6 +478,14 @@ cursor:zoom-in;
 
 <!-- TRANSITION OVERLAY -->
 <div id="trans">
+  <div class="aperture-wrap">
+    <svg class="aperture-svg" id="trans-ap-svg" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(216,178,92,.3)" stroke-width="1.2"/>
+      <g class="blade-seams" id="trans-ap-seams"></g>
+      <polygon class="iris-shape quick" id="trans-ap-iris" points=""></polygon>
+    </svg>
+    <div class="fstop-readout" id="trans-ap-fstop">f/16</div>
+  </div>
   <div id="trans-title"></div>
 </div>
 
@@ -532,6 +576,46 @@ function setAppHeight() {
   );
 }
 
+// ── APERTURE LOADER helpers ─────────────────
+// Builds a 9-blade aperture iris (seam lines + the iris polygon itself)
+// inside the given <svg>. Called once per instance at page init.
+function buildApertureSVG(svgEl){
+  if(!svgEl)return;
+  const N=9, cx=100, cy=100, rOuter=94, rBlade=85, rSeamInner=20;
+  const ns='http://www.w3.org/2000/svg';
+  const seams=svgEl.querySelector('.blade-seams');
+  const iris=svgEl.querySelector('.iris-shape');
+  const pts=[];
+  for(let k=0;k<N;k++){
+    const ang=(-90+k*(360/N))*Math.PI/180;
+    pts.push((cx+rBlade*Math.cos(ang)).toFixed(1)+','+(cy+rBlade*Math.sin(ang)).toFixed(1));
+    if(seams){
+      const line=document.createElementNS(ns,'line');
+      line.setAttribute('x1',(cx+rSeamInner*Math.cos(ang)).toFixed(1));
+      line.setAttribute('y1',(cy+rSeamInner*Math.sin(ang)).toFixed(1));
+      line.setAttribute('x2',(cx+rOuter*Math.cos(ang)).toFixed(1));
+      line.setAttribute('y2',(cy+rOuter*Math.sin(ang)).toFixed(1));
+      seams.appendChild(line);
+    }
+  }
+  if(iris)iris.setAttribute('points',pts.join(' '));
+}
+// Ticks an f-stop readout element through a list of stops over durationMs.
+// Returns the interval id (caller doesn't need it — it self-clears).
+function runFstopCountdown(readoutEl,stops,durationMs){
+  if(!readoutEl)return;
+  readoutEl.textContent='f/'+stops[0];
+  let i=0;
+  const stepMs=durationMs/(stops.length-1);
+  const timer=setInterval(()=>{
+    i++;
+    if(i>=stops.length){clearInterval(timer);return;}
+    readoutEl.textContent='f/'+stops[i];
+  },stepMs);
+}
+const F_STOPS_FULL=['22','16','11','8','5.6','4','2.8','2','1.4','1.2','1','0.95'];
+const F_STOPS_QUICK=['16','5.6','2','0.95'];
+
 window.addEventListener('resize', setAppHeight);
 
 // prevent easy copying — block right-click / drag-and-drop on images & videos
@@ -614,18 +698,32 @@ setAppHeight();
   const intro=document.getElementById('intro');
   setTimeout(()=>{nm.classList.add('in');sb.classList.add('in')},150);
 
+  // build both aperture graphics once (intro + the one reused on every category transition)
+  buildApertureSVG(document.getElementById('intro-ap-svg'));
+  buildApertureSVG(document.getElementById('trans-ap-svg'));
+
   const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
 
-  setTimeout(async ()=>{
+  // aperture opens fully (f/22 → f/0.95) over this duration — the intro won't
+  // dismiss until BOTH this finishes AND the data has actually loaded, so on a
+  // slow connection it holds on the open aperture rather than cutting it short
+  const APERTURE_MS=1800;
+  setTimeout(()=>{
+    document.getElementById('intro-ap-iris').classList.add('open');
+    runFstopCountdown(document.getElementById('intro-ap-fstop'),F_STOPS_FULL,APERTURE_MS);
+  },300);
+  const apertureDone = new Promise(res=>setTimeout(res,300+APERTURE_MS));
+
+  Promise.all([dataPromise,apertureDone]).then(([data])=>{
+    DATA = data;
     nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
     nm.style.transform='translateY(-24px)';
     nm.style.opacity='0';
     sb.style.opacity='0';
-    DATA = await dataPromise;
     buildMetro();
-  },1500);
-  setTimeout(()=>intro.classList.add('out'),1850);
-  setTimeout(()=>intro.style.display='none',2700);
+    setTimeout(()=>intro.classList.add('out'),350);
+    setTimeout(()=>intro.style.display='none',1200);
+  });
 });
 
 // ── LAYOUT TEMPLATES (8 tiles, 12-col grid) ─
@@ -894,6 +992,8 @@ function zoomTransition(tile,catIdx){
     trans.classList.add('fade-in');
     transTitle.textContent=cat.title;
     setTimeout(()=>transTitle.classList.add('show'),100);
+    document.getElementById('trans-ap-iris').classList.add('open');
+    runFstopCountdown(document.getElementById('trans-ap-fstop'),F_STOPS_QUICK,700);
   },300);
 
   // PHASE 3: build gallery behind overlay
@@ -916,6 +1016,7 @@ function zoomTransition(tile,catIdx){
   setTimeout(()=>{
     trans.style.transition='';
     transTitle.textContent='';
+    document.getElementById('trans-ap-iris').classList.remove('open');
   },1700);
 }
 
@@ -1079,6 +1180,8 @@ function goHome(fromPop=false){
     // PHASE 1: fade to black
     trans.style.transition='opacity .35s ease';
     trans.classList.add('fade-in');
+    document.getElementById('trans-ap-iris').classList.add('open');
+    runFstopCountdown(document.getElementById('trans-ap-fstop'),F_STOPS_QUICK,700);
 
     // PHASE 2: rebuild home behind overlay
     setTimeout(()=>{
@@ -1095,6 +1198,7 @@ function goHome(fromPop=false){
     setTimeout(()=>{
       trans.style.transition='';
       transTitle.textContent='';
+      document.getElementById('trans-ap-iris').classList.remove('open');
     },1300);
   }
 
