@@ -18,6 +18,7 @@
   --text:#fff;
   --gray:#8c8c8c;
   --accent:#d8b25c;
+  --af-green:#3ddc63;
   --sw:240px;
   --gap:10px;
   --tb:50px;
@@ -38,17 +39,32 @@ img,video{
   -webkit-touch-callout:none;
 }
 
-/* ══ INTRO ══ */
+/* ══ SITE ROOT — everything except the loading overlay lives in here,
+   so the whole app can be blurred/sharpened as one unit (focus-pull) ══ */
+#site-root{
+  filter:blur(24px);
+  transform:scale(1.015);
+  transition:filter 1s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+#site-root.sharp{
+  filter:blur(0);
+  transform:scale(1);
+  pointer-events:auto;
+}
+
+/* ══ INTRO / VIEWFINDER FOCUS OVERLAY ══ */
 #intro{
   position:fixed;inset:0;z-index:9999;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:opacity .8s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  pointer-events:none;
+  transition:opacity .7s ease;
 }
-#intro.out{opacity:0;pointer-events:none}
+#intro.out{opacity:0}
 #iname{
-    font-family:var(--f);
-  font-weight:200;
-  font-size:clamp(20px,3vw,32px);font-weight:300;
+  font-family:var(--f);
+  font-weight:300;
+  font-size:clamp(20px,3vw,32px);
   letter-spacing:.3em;text-transform:uppercase;
   opacity:0;transform:translateY(12px);
   transition:opacity .8s,transform .8s;
@@ -56,31 +72,39 @@ img,video{
 #iname.in{opacity:1;transform:translateY(0)}
 #isub{
   font-size:10px;letter-spacing:.4em;text-transform:uppercase;
-  color:var(--gray);margin-top:12px;
+  color:var(--gray);margin-top:-14px;
   opacity:0;transition:opacity .6s .3s;
 }
 #isub.in{opacity:1}
 
-/* ══ IRIS DIAPHRAGM (intro viewfinder + aperture reveal) ══ */
-#iris-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.vf-corner{
-  position:absolute;width:26px;height:26px;
-  border:1px solid rgba(216,178,92,.6);
-  opacity:0;transition:opacity .6s ease;
-}
-.vf-corner.in{opacity:1}
-.vf-tl{top:26px;left:26px;border-right:none;border-bottom:none}
-.vf-tr{top:26px;right:26px;border-left:none;border-bottom:none}
-.vf-bl{bottom:26px;left:26px;border-right:none;border-top:none}
-.vf-br{bottom:26px;right:26px;border-left:none;border-top:none}
-#fstop-wrap{
-  position:absolute;bottom:56px;left:50%;transform:translateX(-50%);
+/* AF (autofocus) viewfinder box — like a camera focus-confirm frame */
+#af-box{
+  position:relative;width:min(46vw,260px);height:min(46vw,260px);
   opacity:0;transition:opacity .5s ease;
 }
-#fstop-wrap.in{opacity:1}
-#fstop-txt{
-  font-size:12px;letter-spacing:.35em;color:var(--accent);text-transform:uppercase;
+#af-box.in{opacity:1}
+#af-box.hunting{animation:afHunt 1.05s ease-in-out infinite}
+@keyframes afHunt{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(.93)}
 }
+.af-corner{
+  position:absolute;width:22px;height:22px;
+  border:2px solid rgba(255,255,255,.55);
+  transition:border-color .35s ease, width .35s ease, height .35s ease;
+}
+.af-tl{top:0;left:0;border-right:none;border-bottom:none}
+.af-tr{top:0;right:0;border-left:none;border-bottom:none}
+.af-bl{bottom:0;left:0;border-right:none;border-top:none}
+.af-br{bottom:0;right:0;border-left:none;border-top:none}
+#af-box.confirm .af-corner{border-color:var(--af-green)}
+#af-status{
+  font-size:10px;letter-spacing:.4em;text-transform:uppercase;
+  color:rgba(255,255,255,.45);
+  opacity:0;transition:opacity .5s ease, color .35s ease;
+}
+#af-status.in{opacity:1}
+#af-status.confirm{color:var(--af-green)}
 
 /* ══ TOPBAR ══ */
 #topbar{
@@ -269,7 +293,7 @@ img,video{
   position:fixed;inset:0;z-index:800;
   background:var(--bg);
   opacity:0;pointer-events:none;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  display:flex;align-items:center;justify-content:center;
   transition:opacity .35s ease;
 }
 #trans.fade-in{opacity:1}
@@ -281,16 +305,6 @@ img,video{
   transition:opacity .4s ease,transform .4s ease;
 }
 #trans-title.show{opacity:1;transform:translateY(0)}
-
-/* quick iris shown during category-open / go-home transitions */
-#trans-iris-wrap{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  opacity:0;transition:opacity .3s ease;
-}
-#trans-iris-wrap.show{opacity:1}
-#fstop-mini{
-  font-size:10px;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;
-}
 
 /* ══ GALLERY — Justified Grid ══ */
 #pg-gallery{overflow-y:auto;padding-top:var(--tb)}
@@ -428,40 +442,28 @@ cursor:zoom-in;
   .gi-c,.gi-e{grid-column:span 3}
   .a-cols{grid-template-columns:1fr}
 
-  /* iris / viewfinder — smaller footprint on phones */
-  .vf-corner{width:18px;height:18px}
-  .vf-tl,.vf-tr{top:16px}
-  .vf-bl,.vf-br{bottom:16px}
-  .vf-tl,.vf-bl{left:16px}
-  .vf-tr,.vf-br{right:16px}
-  #fstop-wrap{bottom:40px}
-  #fstop-txt{font-size:10px;letter-spacing:.28em}
+  #af-box{width:min(60vw,200px);height:min(60vw,200px)}
+  .af-corner{width:16px;height:16px}
 }
 </style>
 </head>
 <body>
 
-<!-- INTRO -->
+<!-- INTRO / VIEWFINDER FOCUS OVERLAY -->
 <div id="intro">
-  <svg id="iris-svg">
-    <defs>
-      <mask id="iris-mask">
-        <rect x="0" y="0" width="100%" height="100%" fill="#fff"/>
-        <polygon id="iris-hole" points="" fill="#000"/>
-      </mask>
-    </defs>
-    <rect x="0" y="0" width="100%" height="100%" fill="#0a0a0a" mask="url(#iris-mask)"/>
-    <polygon id="iris-outline" points="" fill="none" stroke="rgba(216,178,92,.5)" stroke-width="1"/>
-    <g id="iris-seams"></g>
-  </svg>
-  <div class="vf-corner vf-tl"></div>
-  <div class="vf-corner vf-tr"></div>
-  <div class="vf-corner vf-bl"></div>
-  <div class="vf-corner vf-br"></div>
   <div id="iname">Mohsen 01</div>
   <div id="isub">Visual Creator</div>
-  <div id="fstop-wrap"><span id="fstop-txt">f/22</span></div>
+  <div id="af-box">
+    <span class="af-corner af-tl"></span>
+    <span class="af-corner af-tr"></span>
+    <span class="af-corner af-bl"></span>
+    <span class="af-corner af-br"></span>
+  </div>
+  <div id="af-status">Focusing</div>
 </div>
+
+<!-- SITE ROOT (blurred → sharp as it loads) -->
+<div id="site-root">
 
 <!-- HAMBURGER -->
 <div id="hbg" onclick="toggleSB()">
@@ -498,13 +500,6 @@ cursor:zoom-in;
 
 <!-- TRANSITION OVERLAY -->
 <div id="trans">
-  <div id="trans-iris-wrap">
-    <svg viewBox="0 0 140 140" width="64" height="64">
-      <polygon id="iris-mini-shape" points="" fill="none" stroke="rgba(216,178,92,.7)" stroke-width="1.5"/>
-      <g id="iris-mini-seams"></g>
-    </svg>
-    <div id="fstop-mini">f/16</div>
-  </div>
   <div id="trans-title"></div>
 </div>
 
@@ -578,6 +573,8 @@ cursor:zoom-in;
   </div>
 </div>
 
+</div><!-- /site-root -->
+
 <script>
 // ── utils ──────────────────────────────────
 function shuffle(a){
@@ -613,73 +610,6 @@ function kickAutoplayVideos(){
   });
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
-
-// ══════════════════════════════════════════════════════
-// IRIS DIAPHRAGM — shared aperture-opening animation used by
-// (1) the full-screen intro reveal and (2) the short in-transition
-// version shown while opening a category / returning home.
-// A 9-blade iris silhouette is a nonagon whose size (and slight
-// rotation) is driven by real f-stop values: aperture diameter is
-// roughly proportional to 1/f, so growth from f/22 → f/0.95 starts
-// slow and accelerates — matching how a real diaphragm looks.
-// ══════════════════════════════════════════════════════
-const F_STOPS_FULL  = [22,16,11,8,5.6,4,2.8,2,1.4,1.2,1,0.95];
-const F_STOPS_QUICK = [16,5.6,2,0.95];
-const IRIS_SIDES = 9;
-
-function irisPolygonPoints(cx,cy,radius,sides,rotationDeg){
-  const pts=[];
-  const rot=rotationDeg*Math.PI/180;
-  for(let i=0;i<sides;i++){
-    const a=(Math.PI*2*i/sides)-Math.PI/2+rot;
-    pts.push((cx+radius*Math.cos(a)).toFixed(1)+','+(cy+radius*Math.sin(a)).toFixed(1));
-  }
-  return pts.join(' ');
-}
-function irisRadiusForF(fNumber,maxRadius){
-  const factor=Math.min(1,0.95/fNumber);
-  return Math.max(3,maxRadius*factor);
-}
-function irisSeamLines(seamsG,cx,cy,radius,sides,rotationDeg,color){
-  seamsG.innerHTML='';
-  const rot=rotationDeg*Math.PI/180;
-  const ns='http://www.w3.org/2000/svg';
-  for(let i=0;i<sides;i++){
-    const a=(Math.PI*2*i/sides)-Math.PI/2+rot;
-    const x=cx+radius*Math.cos(a), y=cy+radius*Math.sin(a);
-    const line=document.createElementNS(ns,'line');
-    line.setAttribute('x1',cx);line.setAttribute('y1',cy);
-    line.setAttribute('x2',x.toFixed(1));line.setAttribute('y2',y.toFixed(1));
-    line.setAttribute('stroke',color);
-    line.setAttribute('stroke-width','1');
-    seamsG.appendChild(line);
-  }
-}
-// drives one f-stop sequence from closed toward open, updating the
-// polygon(s), seam lines and the readout text at each stop
-let _irisGen=0;
-function playIris({stops,duration,cx,cy,maxRadius,holeEl,outlineEl,seamsG,textEl,seamColor,onDone}){
-  const myGen=++_irisGen;
-  const stepDur=duration/stops.length;
-  let i=0;
-  (function step(){
-    if(myGen!==_irisGen)return; // a newer iris run superseded this one
-    const f=stops[i];
-    const rotation=-(1-Math.min(1,0.95/f))*14;
-    const r=irisRadiusForF(f,maxRadius);
-    const pts=irisPolygonPoints(cx,cy,r,IRIS_SIDES,rotation);
-    if(holeEl)holeEl.setAttribute('points',pts);
-    if(outlineEl)outlineEl.setAttribute('points',pts);
-    if(seamsG)irisSeamLines(seamsG,cx,cy,r,IRIS_SIDES,rotation,seamColor||'rgba(216,178,92,.25)');
-    if(textEl)textEl.textContent='f/'+f;
-    i++;
-    if(i<stops.length){
-      setTimeout(step,stepDur);
-    }else if(onDone){
-      onDone();
-    }
-  })();
-}
 
 // ══════════════════════════════════════════════════════
 // DATA — از فایل data.xlsx خونده می‌شه (کنار همین index.html روی هاست بذارش)
@@ -743,42 +673,38 @@ setAppHeight();
   const nm=document.getElementById('iname');
   const sb=document.getElementById('isub');
   const intro=document.getElementById('intro');
-  const vfCorners=document.querySelectorAll('.vf-corner');
-  const fWrap=document.getElementById('fstop-wrap');
-  const fTxt=document.getElementById('fstop-txt');
-  const irisHole=document.getElementById('iris-hole');
-  const irisOutline=document.getElementById('iris-outline');
-  const irisSeams=document.getElementById('iris-seams');
+  const siteRoot=document.getElementById('site-root');
+  const afBox=document.getElementById('af-box');
+  const afStatus=document.getElementById('af-status');
 
-  const iw=window.innerWidth, ih=window.innerHeight;
-  const icx=iw/2, icy=ih/2;
-  const iMaxR=Math.hypot(iw,ih)/2*1.15; // a bit past the diagonal so corners fully clear
-
-  setTimeout(()=>{nm.classList.add('in');sb.classList.add('in')},150);
-  setTimeout(()=>{vfCorners.forEach(c=>c.classList.add('in'));fWrap.classList.add('in')},300);
+  setTimeout(()=>{
+    nm.classList.add('in');sb.classList.add('in');
+    afBox.classList.add('in','hunting');
+    afStatus.classList.add('in');
+  },150);
 
   const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
 
   setTimeout(async ()=>{
-    nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
-    nm.style.transform='translateY(-24px)';
-    nm.style.opacity='0';
-    sb.style.opacity='0';
     DATA = await dataPromise;
     buildMetro();
 
-    // open the diaphragm — reveals the built site as the aperture widens
-    playIris({
-      stops:F_STOPS_FULL,
-      duration:2300,
-      cx:icx,cy:icy,maxRadius:iMaxR,
-      holeEl:irisHole,outlineEl:irisOutline,seamsG:irisSeams,
-      textEl:fTxt,
-      onDone:()=>{
-        intro.classList.add('out');
-        setTimeout(()=>intro.style.display='none',700);
-      }
-    });
+    // racking focus: site sharpens, AF box locks and turns green — like a
+    // camera confirming focus in the viewfinder
+    afBox.classList.remove('hunting');
+    afBox.classList.add('confirm');
+    afStatus.classList.add('confirm');
+    afStatus.textContent='Focused';
+    siteRoot.classList.add('sharp');
+
+    setTimeout(()=>{
+      nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
+      nm.style.transform='translateY(-24px)';
+      nm.style.opacity='0';
+      sb.style.opacity='0';
+      intro.classList.add('out');
+    },550);
+    setTimeout(()=>intro.style.display='none',1300);
   },1500);
 });
 
@@ -1026,10 +952,6 @@ function zoomTransition(tile,catIdx){
   const mwrap=document.getElementById('metro-wrap');
   const trans=document.getElementById('trans');
   const transTitle=document.getElementById('trans-title');
-  const irisWrap=document.getElementById('trans-iris-wrap');
-  const irisShape=document.getElementById('iris-mini-shape');
-  const irisSeamsMini=document.getElementById('iris-mini-seams');
-  const fMini=document.getElementById('fstop-mini');
   const cat=DATA[catIdx];
 
   // calculate which tile was clicked and set transform-origin toward it
@@ -1052,17 +974,6 @@ function zoomTransition(tile,catIdx){
     trans.classList.add('fade-in');
     transTitle.textContent=cat.title;
     setTimeout(()=>transTitle.classList.add('show'),100);
-
-    // quick iris diaphragm animation on top of the black overlay
-    irisWrap.classList.add('show');
-    playIris({
-      stops:F_STOPS_QUICK,
-      duration:650,
-      cx:70,cy:70,maxRadius:58,
-      holeEl:null,outlineEl:irisShape,seamsG:irisSeamsMini,
-      textEl:fMini,
-      seamColor:'rgba(216,178,92,.3)'
-    });
   },300);
 
   // PHASE 3: build gallery behind overlay
@@ -1073,7 +984,6 @@ function zoomTransition(tile,catIdx){
   // PHASE 4: fade out overlay → reveal gallery
   setTimeout(()=>{
     transTitle.classList.remove('show');
-    irisWrap.classList.remove('show');
     trans.style.transition='opacity .5s ease';
     trans.classList.remove('fade-in');
     // fade in gallery grid
@@ -1230,10 +1140,6 @@ function goHome(fromPop=false){
   const transTitle=document.getElementById('trans-title');
   const grid=document.querySelector('.photo-grid');
   const wrap=document.getElementById('wrap');
-  const irisWrap=document.getElementById('trans-iris-wrap');
-  const irisShape=document.getElementById('iris-mini-shape');
-  const irisSeamsMini=document.getElementById('iris-mini-seams');
-  const fMini=document.getElementById('fstop-mini');
 
   // fade out gallery
   if(grid) grid.classList.remove('in');
@@ -1254,17 +1160,6 @@ function goHome(fromPop=false){
     trans.style.transition='opacity .35s ease';
     trans.classList.add('fade-in');
 
-    // quick iris diaphragm animation on top of the black overlay
-    irisWrap.classList.add('show');
-    playIris({
-      stops:F_STOPS_QUICK,
-      duration:550,
-      cx:70,cy:70,maxRadius:58,
-      holeEl:null,outlineEl:irisShape,seamsG:irisSeamsMini,
-      textEl:fMini,
-      seamColor:'rgba(216,178,92,.3)'
-    });
-
     // PHASE 2: rebuild home behind overlay
     setTimeout(()=>{
       buildMetro(true); // reuse same layout
@@ -1275,7 +1170,6 @@ function goHome(fromPop=false){
     setTimeout(()=>{
       trans.style.transition='opacity .6s ease';
       trans.classList.remove('fade-in');
-      irisWrap.classList.remove('show');
     },600);
 
     setTimeout(()=>{
