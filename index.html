@@ -18,7 +18,6 @@
   --text:#fff;
   --gray:#8c8c8c;
   --accent:#d8b25c;
-  --af-green:#3ddc63;
   --sw:240px;
   --gap:10px;
   --tb:50px;
@@ -39,33 +38,74 @@ img,video{
   -webkit-touch-callout:none;
 }
 
-/* ══ SITE ROOT — everything except the loading overlay lives in here,
-   so the whole app can be blurred/sharpened as one unit (focus-pull) ══ */
-#site-root{
-  position:fixed;inset:0;
-  filter:blur(24px);
-  transform:scale(1.015);
-  transition:filter 1s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.4,0,.2,1);
-  pointer-events:none;
+/* ══ VIEWFINDER LOADER ══ */
+#vf-loader{
+  position:fixed;inset:0;z-index:10000;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity 1s ease,visibility 1s ease;
 }
-#site-root.sharp{
-  filter:blur(0);
-  transform:scale(1);
-  pointer-events:auto;
+#vf-loader.out{opacity:0;visibility:hidden;pointer-events:none}
+
+#vf-grid{
+  position:absolute;inset:0;width:100%;height:100%;
+  opacity:0.12;transition:opacity 1.2s ease;
+}
+#vf-grid line{stroke:#fff;stroke-width:0.5}
+#vf-grid rect{fill:none;stroke:#fff;stroke-width:0.5}
+
+#vf-focus{
+  position:absolute;width:80px;height:80px;
+  border:1.5px solid rgba(255,255,255,0.3);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 1.4s cubic-bezier(.25,.8,.25,1);
+}
+#vf-focus-inner{
+  width:6px;height:6px;background:rgba(255,255,255,0.5);border-radius:50%;
+  transition:all 1.4s cubic-bezier(.25,.8,.25,1);
+}
+.vf-bracket{
+  position:absolute;width:12px;height:12px;
+}
+.vf-bracket.tl{top:-3px;left:-3px;border-top:1.5px solid rgba(216,178,92,0.6);border-left:1.5px solid rgba(216,178,92,0.6)}
+.vf-bracket.tr{top:-3px;right:-3px;border-top:1.5px solid rgba(216,178,92,0.6);border-right:1.5px solid rgba(216,178,92,0.6)}
+.vf-bracket.bl{bottom:-3px;left:-3px;border-bottom:1.5px solid rgba(216,178,92,0.6);border-left:1.5px solid rgba(216,178,92,0.6)}
+.vf-bracket.br{bottom:-3px;right:-3px;border-bottom:1.5px solid rgba(216,178,92,0.6);border-right:1.5px solid rgba(216,178,92,0.6)}
+
+.vf-readout{
+  position:absolute;font-size:8px;letter-spacing:0.15em;
+  color:rgba(255,255,255,0.35);text-transform:uppercase;
+  transition:opacity 0.8s;
+}
+.vf-readout.tl{top:16px;left:16px}
+.vf-readout.tr{top:16px;right:16px;text-align:right}
+.vf-readout.bl{bottom:16px;left:16px}
+.vf-readout.br{bottom:16px;right:16px;text-align:right}
+.vf-readout span.val{color:rgba(255,255,255,0.6);font-variant-numeric:tabular-nums}
+.vf-readout span.gold{color:rgba(216,178,92,0.7)}
+
+#vf-label{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);margin-top:60px;
+  font-size:7px;letter-spacing:0.3em;
+  color:rgba(255,255,255,0.2);text-transform:uppercase;
+  transition:all 1s;white-space:nowrap;
+}
+#vf-status{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;background:rgba(216,178,92,0.5);border-radius:50%;
+  transition:all 0.6s;
 }
 
-/* ══ INTRO / VIEWFINDER FOCUS OVERLAY ══ */
+/* ══ INTRO ══ */
 #intro{
-  position:fixed;inset:0;z-index:9999;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
-  pointer-events:none;
-  transition:opacity .7s ease;
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .8s ease;
 }
-#intro.out{opacity:0}
+#intro.out{opacity:0;pointer-events:none}
 #iname{
-  font-family:var(--f);
-  font-weight:300;
-  font-size:clamp(20px,3vw,32px);
+  font-family:var(--f);font-weight:200;
+  font-size:clamp(20px,3vw,32px);font-weight:300;
   letter-spacing:.3em;text-transform:uppercase;
   opacity:0;transform:translateY(12px);
   transition:opacity .8s,transform .8s;
@@ -73,43 +113,14 @@ img,video{
 #iname.in{opacity:1;transform:translateY(0)}
 #isub{
   font-size:10px;letter-spacing:.4em;text-transform:uppercase;
-  color:var(--gray);margin-top:-14px;
+  color:var(--gray);margin-top:12px;
   opacity:0;transition:opacity .6s .3s;
 }
 #isub.in{opacity:1}
 
-/* AF (autofocus) viewfinder box — like a camera focus-confirm frame */
-#af-box{
-  position:relative;width:min(46vw,260px);height:min(46vw,260px);
-  opacity:0;transition:opacity .5s ease;
-}
-#af-box.in{opacity:1}
-#af-box.hunting{animation:afHunt 1.05s ease-in-out infinite}
-@keyframes afHunt{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(.93)}
-}
-.af-corner{
-  position:absolute;width:22px;height:22px;
-  border:2px solid rgba(255,255,255,.55);
-  transition:border-color .35s ease, width .35s ease, height .35s ease;
-}
-.af-tl{top:0;left:0;border-right:none;border-bottom:none}
-.af-tr{top:0;right:0;border-left:none;border-bottom:none}
-.af-bl{bottom:0;left:0;border-right:none;border-top:none}
-.af-br{bottom:0;right:0;border-left:none;border-top:none}
-#af-box.confirm .af-corner{border-color:var(--af-green)}
-#af-status{
-  font-size:10px;letter-spacing:.4em;text-transform:uppercase;
-  color:rgba(255,255,255,.45);
-  opacity:0;transition:opacity .5s ease, color .35s ease;
-}
-#af-status.in{opacity:1}
-#af-status.confirm{color:var(--af-green)}
-
 /* ══ TOPBAR ══ */
 #topbar{
-  position:absolute;top:0;left:0;right:0;height:var(--tb);
+  position:fixed;top:0;left:0;right:0;height:var(--tb);
   display:flex;align-items:center;
   padding:0 24px 0 56px;
   z-index:400;
@@ -152,7 +163,7 @@ img,video{
 
 /* hamburger */
 #hbg{
-  position:absolute;top:13px;left:14px;z-index:600;
+  position:fixed;top:13px;left:14px;z-index:600;
   width:28px;height:24px;cursor:pointer;
   display:flex;flex-direction:column;justify-content:space-between;
   padding:2px 0;
@@ -167,7 +178,7 @@ img,video{
 
 /* ══ SIDEBAR ══ */
 #sidebar{
-  position:absolute;left:0;top:0;bottom:0;width:var(--sw);
+  position:fixed;left:0;top:0;bottom:0;width:var(--sw);
   background:rgba(8,8,8,.98);
   border-right:1px solid rgba(255,255,255,.05);
   display:flex;flex-direction:column;padding:52px 36px 40px;
@@ -208,7 +219,7 @@ img,video{
 
 /* ══ DIM ══ */
 #dim{
-  position:absolute;inset:0;z-index:490;
+  position:fixed;inset:0;z-index:490;
   background:rgba(0,0,0,0);pointer-events:none;
   transition:background .4s;
 }
@@ -216,7 +227,7 @@ img,video{
 
 /* ══ WRAP ══ */
 #wrap{
-  position:absolute;inset:0;
+  position:fixed;inset:0;
   transition:transform .45s cubic-bezier(.77,0,.175,1),opacity .45s ease;
 }
 #wrap.pushed{transform:translateX(calc(var(--sw)*.45));opacity:.3}
@@ -291,7 +302,7 @@ img,video{
 
 /* ══ TRANSITION OVERLAY ══ */
 #trans{
-  position:absolute;inset:0;z-index:800;
+  position:fixed;inset:0;z-index:800;
   background:var(--bg);
   opacity:0;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
@@ -351,7 +362,7 @@ img,video{
 
 /* ══ LIGHTBOX ══ */
 #lb{
-  position:absolute;inset:0;z-index:900;background:#000;
+  position:fixed;inset:0;z-index:900;background:#000;
   display:flex;
 opacity:0;
 pointer-events:none;
@@ -442,29 +453,58 @@ cursor:zoom-in;
   .gi-b{grid-column:span 6}
   .gi-c,.gi-e{grid-column:span 3}
   .a-cols{grid-template-columns:1fr}
-
-  #af-box{width:min(60vw,200px);height:min(60vw,200px)}
-  .af-corner{width:16px;height:16px}
 }
 </style>
 </head>
 <body>
 
-<!-- INTRO / VIEWFINDER FOCUS OVERLAY -->
+<!-- VIEWFINDER LOADER -->
+<div id="vf-loader">
+  <svg id="vf-grid" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <line x1="33.33" y1="0" x2="33.33" y2="100"/>
+    <line x1="66.66" y1="0" x2="66.66" y2="100"/>
+    <line x1="0" y1="33.33" x2="100" y2="33.33"/>
+    <line x1="0" y1="66.66" x2="100" y2="66.66"/>
+    <rect x="2" y="2" width="96" height="96" rx="0.5"/>
+  </svg>
+  
+  <div id="vf-focus">
+    <div id="vf-focus-inner"></div>
+    <div class="vf-bracket tl"></div>
+    <div class="vf-bracket tr"></div>
+    <div class="vf-bracket bl"></div>
+    <div class="vf-bracket br"></div>
+  </div>
+  
+  <div class="vf-readout tl">
+    <div style="margin-bottom:4px;">SHUTTER <span class="val" id="vf-shutter">1/125</span></div>
+    <div>APERTURE <span class="val" id="vf-aperture">f/2.8</span></div>
+  </div>
+  
+  <div class="vf-readout tr">
+    <div style="margin-bottom:4px;">ISO <span class="val" id="vf-iso">400</span></div>
+    <div>EV <span class="val" id="vf-ev">+0.3</span></div>
+  </div>
+  
+  <div class="vf-readout bl">
+    <div style="margin-bottom:4px;">WB <span class="val">5600K</span></div>
+    <div>FORMAT <span class="val">RAW</span></div>
+  </div>
+  
+  <div class="vf-readout br">
+    <div style="margin-bottom:4px;">BATTERY <span class="gold">87%</span></div>
+    <div>CARDS <span class="val">2/2</span></div>
+  </div>
+  
+  <div id="vf-label">Acquiring Focus</div>
+  <div id="vf-status"></div>
+</div>
+
+<!-- INTRO -->
 <div id="intro">
   <div id="iname">Mohsen 01</div>
   <div id="isub">Visual Creator</div>
-  <div id="af-box">
-    <span class="af-corner af-tl"></span>
-    <span class="af-corner af-tr"></span>
-    <span class="af-corner af-bl"></span>
-    <span class="af-corner af-br"></span>
-  </div>
-  <div id="af-status">Focusing</div>
 </div>
-
-<!-- SITE ROOT (blurred → sharp as it loads) -->
-<div id="site-root">
 
 <!-- HAMBURGER -->
 <div id="hbg" onclick="toggleSB()">
@@ -524,7 +564,7 @@ cursor:zoom-in;
     <div class="pg-inner">
       <img src="public/logo.svg" alt="Mohsen 01" class="about-logo"/>
       <h1 class="pg-ttl">Mohsen 01</h1>
-      <p class="bio">Details create distinction.<br><br>I’m Mohsen, a visual creator specializing in photography and filmmaking. Since 2012, I’ve been creating visuals that combine minimalist aesthetics, cinematic storytelling, and meticulous attention to detail.<br><br>From product and fashion photography to commercial campaigns, social media films, documentaries, and music videos, every project is an opportunity to create meaningful visuals that elevate brands, evoke emotion, and leave a lasting impression.</p>
+      <p class="bio">Details create distinction.<br><br>I'm Mohsen, a visual creator specializing in photography and filmmaking. Since 2012, I've been creating visuals that combine minimalist aesthetics, cinematic storytelling, and meticulous attention to detail.<br><br>From product and fashion photography to commercial campaigns, social media films, documentaries, and music videos, every project is an opportunity to create meaningful visuals that elevate brands, evoke emotion, and leave a lasting impression.</p>
       <div class="a-cols">
         <div>
           <div class="a-lbl">Specialties</div>
@@ -574,8 +614,6 @@ cursor:zoom-in;
   </div>
 </div>
 
-</div><!-- /site-root -->
-
 <script>
 // ── utils ──────────────────────────────────
 function shuffle(a){
@@ -611,7 +649,6 @@ function kickAutoplayVideos(){
   });
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
-
 // ══════════════════════════════════════════════════════
 // DATA — از فایل data.xlsx خونده می‌شه (کنار همین index.html روی هاست بذارش)
 // شیت "Categories": ستون‌های Id, Title
@@ -668,62 +705,143 @@ let filtItems=[];
 let lbIdx=0;
 const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-probing video/image metadata on repeat visits
 
-// ── INIT ───────────────────────────────────
-window.addEventListener('load',()=>{
-setAppHeight();
-  const nm=document.getElementById('iname');
-  const sb=document.getElementById('isub');
-  const intro=document.getElementById('intro');
-  const siteRoot=document.getElementById('site-root');
-  const afBox=document.getElementById('af-box');
-  const afStatus=document.getElementById('af-status');
+// ── VIEWFINDER LOADER ──────────────────────
+const VF_SHUTTERS = ['1/60','1/125','1/250','1/500','1/1000','1/2000'];
+const VF_APERTURES = ['f/1.4','f/2.0','f/2.8','f/4.0','f/5.6','f/8.0'];
+const VF_ISOS = ['200','400','800','1600','3200'];
+const VF_EVS = ['-1.0','-0.7','-0.3','0.0','+0.3','+0.7','+1.0'];
 
-  setTimeout(()=>{
-    nm.classList.add('in');sb.classList.add('in');
-    afBox.classList.add('in','hunting');
-    afStatus.classList.add('in');
-  },150);
+let vfInterval = null;
+let vfMinTimeDone = false;
+let vfDataLoaded = false;
+let vfFocused = false;
 
-  const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
+function vfRandomize() {
+  document.getElementById('vf-shutter').textContent = VF_SHUTTERS[Math.floor(Math.random()*VF_SHUTTERS.length)];
+  document.getElementById('vf-aperture').textContent = VF_APERTURES[Math.floor(Math.random()*VF_APERTURES.length)];
+  document.getElementById('vf-iso').textContent = VF_ISOS[Math.floor(Math.random()*VF_ISOS.length)];
+  document.getElementById('vf-ev').textContent = VF_EVS[Math.floor(Math.random()*VF_EVS.length)];
+}
 
-  setTimeout(async ()=>{
-    DATA = await dataPromise;
+function vfStartRandomizing() {
+  if(vfInterval) clearInterval(vfInterval);
+  vfInterval = setInterval(vfRandomize, 200);
+}
+
+function vfStopRandomizing() {
+  if(vfInterval) { clearInterval(vfInterval); vfInterval = null; }
+}
+
+function vfDoFocusLock() {
+  if(vfFocused) return;
+  vfFocused = true;
+  vfStopRandomizing();
+
+  // Lock to "perfect exposure"
+  document.getElementById('vf-shutter').textContent = '1/250';
+  document.getElementById('vf-aperture').textContent = 'f/4.0';
+  document.getElementById('vf-iso').textContent = '400';
+  document.getElementById('vf-ev').textContent = '0.0';
+
+  const focus = document.getElementById('vf-focus');
+  const focusInner = document.getElementById('vf-focus-inner');
+  const label = document.getElementById('vf-label');
+  const status = document.getElementById('vf-status');
+  const grid = document.getElementById('vf-grid');
+  const readouts = document.querySelectorAll('.vf-readout');
+
+  focus.style.borderColor = 'rgba(216,178,92,0.8)';
+  focus.style.boxShadow = '0 0 30px rgba(216,178,92,0.15), inset 0 0 30px rgba(216,178,92,0.05)';
+  focus.style.transform = 'scale(0.5)';
+  focusInner.style.background = '#d8b25c';
+  focusInner.style.boxShadow = '0 0 15px rgba(216,178,92,0.6)';
+
+  label.textContent = 'Focus Locked';
+  label.style.color = 'rgba(216,178,92,0.7)';
+  label.style.letterSpacing = '0.4em';
+
+  status.style.background = '#d8b25c';
+  status.style.boxShadow = '0 0 6px rgba(216,178,92,0.6)';
+
+  // Fade out everything
+  setTimeout(() => {
+    grid.style.opacity = '0';
+    readouts.forEach(r => r.style.opacity = '0');
+    focus.style.opacity = '0';
+    label.style.opacity = '0';
+    status.style.opacity = '0';
+  }, 700);
+
+  // Remove loader, start intro
+  setTimeout(() => {
+    document.getElementById('vf-loader').classList.add('out');
+    startIntro();
+  }, 1400);
+}
+
+function vfCheckReady() {
+  if(vfMinTimeDone && vfDataLoaded && !vfFocused) {
+    vfDoFocusLock();
+  }
+}
+
+// ── INTRO (modified to be called after loader) ─
+function startIntro() {
+  const nm = document.getElementById('iname');
+  const sb = document.getElementById('isub');
+  const intro = document.getElementById('intro');
+  
+  setTimeout(() => { nm.classList.add('in'); sb.classList.add('in'); }, 150);
+  
+  setTimeout(() => {
+    nm.style.transition = 'transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
+    nm.style.transform = 'translateY(-24px)';
+    nm.style.opacity = '0';
+    sb.style.opacity = '0';
     buildMetro();
+  }, 1500);
+  
+  setTimeout(() => intro.classList.add('out'), 1850);
+  setTimeout(() => intro.style.display = 'none', 2700);
+}
 
-    // racking focus: site sharpens, AF box locks and turns green — like a
-    // camera confirming focus in the viewfinder
-    afBox.classList.remove('hunting');
-    afBox.classList.add('confirm');
-    afStatus.classList.add('confirm');
-    afStatus.textContent='Focused';
-    siteRoot.classList.add('sharp');
+// ── INIT ───────────────────────────────────
+window.addEventListener('load', () => {
+  setAppHeight();
+  vfStartRandomizing();
 
-    setTimeout(()=>{
-      nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
-      nm.style.transform='translateY(-24px)';
-      nm.style.opacity='0';
-      sb.style.opacity='0';
-      intro.classList.add('out');
-    },550);
-    setTimeout(()=>intro.style.display='none',1300);
-  },1500);
+  // Minimum display time: 2 seconds
+  setTimeout(() => {
+    vfMinTimeDone = true;
+    vfCheckReady();
+  }, 2000);
+
+  // Kick off data load
+  const dataPromise = loadSiteData();
+  dataPromise.then(data => {
+    DATA = data;
+    vfDataLoaded = true;
+    vfCheckReady();
+  }).catch(() => {
+    // Even if data fails, we still want to show the site
+    DATA = [];
+    vfDataLoaded = true;
+    vfCheckReady();
+  });
 });
 
 // ── LAYOUT TEMPLATES (8 tiles, 12-col grid) ─
-// هر template دقیقاً ۱۲ستون × N ردیف رو پر می‌کنه — بدون gap
 const TEMPLATES = [
-  // A: tall-left(4col,2row) + wide-top-right(8col,1row) + 2mid(4col) + 4bottom(3col)
   { rows:3, areas:[
-    {c:'1/5',  r:'1/3'},   // tall left
-    {c:'5/13', r:'1/2'},   // wide top right
-    {c:'5/9',  r:'2/3'},   // mid left
-    {c:'9/13', r:'2/3'},   // mid right
-    {c:'1/4',  r:'3/4'},   // bottom 1
-    {c:'4/7',  r:'3/4'},   // bottom 2
-    {c:'7/10', r:'3/4'},   // bottom 3
-    {c:'10/13',r:'3/4'},   // bottom 4
+    {c:'1/5',  r:'1/3'},
+    {c:'5/13', r:'1/2'},
+    {c:'5/9',  r:'2/3'},
+    {c:'9/13', r:'2/3'},
+    {c:'1/4',  r:'3/4'},
+    {c:'4/7',  r:'3/4'},
+    {c:'7/10', r:'3/4'},
+    {c:'10/13',r:'3/4'},
   ]},
-  // B: tall-right(4col,2row) + wide-top-left(8col,1row) + 2mid(4col) + 4bottom(3col)
   { rows:3, areas:[
     {c:'9/13', r:'1/3'},
     {c:'1/9',  r:'1/2'},
@@ -734,18 +852,16 @@ const TEMPLATES = [
     {c:'7/10', r:'3/4'},
     {c:'10/13',r:'3/4'},
   ]},
-  // C: 3-equal-top + big-bottom-left(6col,2row) + 3-right(2col each) x2
   { rows:3, areas:[
     {c:'1/5',  r:'1/2'},
     {c:'5/9',  r:'1/2'},
     {c:'9/13', r:'1/2'},
-    {c:'1/7',  r:'2/4'},   // big bottom left
+    {c:'1/7',  r:'2/4'},
     {c:'7/10', r:'2/3'},
     {c:'10/13',r:'2/3'},
     {c:'7/10', r:'3/4'},
     {c:'10/13',r:'3/4'},
   ]},
-  // D: 4-equal-top + 4-equal-bottom (pure symmetric)
   { rows:2, areas:[
     {c:'1/4',  r:'1/2'},
     {c:'4/7',  r:'1/2'},
@@ -756,23 +872,21 @@ const TEMPLATES = [
     {c:'7/10', r:'2/3'},
     {c:'10/13',r:'2/3'},
   ]},
-  // E: full-width-top(1row) + 3mid(4col) + big-bottom-left(6col) + 2small-bottom-right
   { rows:3, areas:[
-    {c:'1/13', r:'1/2'},   // full width top
+    {c:'1/13', r:'1/2'},
     {c:'1/5',  r:'2/3'},
     {c:'5/9',  r:'2/3'},
     {c:'9/13', r:'2/3'},
-    {c:'1/7',  r:'3/4'},   // big bottom left
+    {c:'1/7',  r:'3/4'},
     {c:'7/9',  r:'3/4'},
     {c:'9/11', r:'3/4'},
     {c:'11/13',r:'3/4'},
   ]},
-  // F: 2big-top(6col each) + tall-left(3col,2row) + tall-right(3col,2row) + 2center
   { rows:3, areas:[
     {c:'1/7',  r:'1/2'},
     {c:'7/13', r:'1/2'},
-    {c:'1/4',  r:'2/4'},   // tall left bottom
-    {c:'10/13',r:'2/4'},   // tall right bottom
+    {c:'1/4',  r:'2/4'},
+    {c:'10/13',r:'2/4'},
     {c:'4/7',  r:'2/3'},
     {c:'7/10', r:'2/3'},
     {c:'4/7',  r:'3/4'},
@@ -780,14 +894,11 @@ const TEMPLATES = [
   ]},
 ];
 
-// mobile: fixed "metro-style" layout — a hero tile, one tall tile, rest small.
-// Uses the same 12-col grid as desktop, split into a left/right half per row.
-// rowTemplate makes the hero's two rows smaller (~1.5x a normal tile instead of 2x).
 const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', areas:[
-  {c:'1/13', r:'1/3'},  // hero — full width, ~1.5x height
+  {c:'1/13', r:'1/3'},
   {c:'1/7',  r:'3/4'},
   {c:'7/13', r:'3/4'},
-  {c:'1/7',  r:'4/6'},  // tall left
+  {c:'1/7',  r:'4/6'},
   {c:'7/13', r:'4/5'},
   {c:'7/13', r:'5/6'},
   {c:'1/7',  r:'6/7'},
@@ -795,14 +906,6 @@ const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', a
 ]};
 
 // ── TILE MEDIA (staged load + random slide/roll transitions) ─
-// Builds slide elements for a tile (photo or video). Photo tiles load
-// their first 3 slides right away, then a second batch of up to 3 more
-// a few seconds later — every slide is loaded (given a real src) the
-// moment it's created, so nothing goes black waiting on its turn to
-// roll in. Motion tiles just load all 3 videos up front (that's the
-// whole category). Starts on a random slide, then rolls to a random
-// different one on its own randomized timer — staggered per tile so
-// tiles never change together.
 function buildTileMedia(tile,cat){
   const isVideoCat = cat.items.some(it=>it.type==='video');
   const cap = isVideoCat ? 3 : 6;
@@ -831,16 +934,13 @@ function buildTileMedia(tile,cat){
     return s;
   }
 
-  // first batch loads right away
   const eagerCount=Math.min(3,allItems.length);
   for(let i=0;i<eagerCount;i++) makeSlide(allItems[i]);
 
-  // randomized starting slide — not always the first item
   let curIdx=Math.floor(Math.random()*slides.length);
   slides[curIdx].classList.add('on');
   slides[curIdx].style.transform='translate(0,0)';
 
-  // second batch (photo tiles only) loads a few seconds later, already fully loaded by the time it's needed
   if(allItems.length>eagerCount){
     setTimeout(()=>{
       for(let i=eagerCount;i<allItems.length;i++) makeSlide(allItems[i]);
@@ -852,7 +952,7 @@ function buildTileMedia(tile,cat){
   const DIRS=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
 
   function roll(){
-    if(slides.length<2)return; // extra slides haven't loaded in yet
+    if(slides.length<2)return;
     let nextIdx;
     do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
     const d=DIRS[Math.floor(Math.random()*DIRS.length)];
@@ -864,7 +964,7 @@ function buildTileMedia(tile,cat){
     inEl.style.transition='none';
     inEl.style.transform=`translate(${d.x*100}%, ${d.y*100}%)`;
     inEl.classList.add('on');
-    void inEl.offsetWidth; // force reflow
+    void inEl.offsetWidth;
 
     inEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
     outEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
@@ -885,16 +985,14 @@ function buildTileMedia(tile,cat){
   function scheduleNext(delay){
     setTimeout(()=>{
       roll();
-      scheduleNext(5000+Math.random()*3000); // next change: random 5-8s
+      scheduleNext(5000+Math.random()*3000);
     },delay);
   }
 
-  // first change per tile: random 4-8s — staggers the initial start
   scheduleNext(4000+Math.random()*4000);
 }
 
 // ── BUILD METRO ────────────────────────────
-// saved layout — set once on load, reused on back
 let _savedTpl = null;
 let _savedCats = null;
 
@@ -903,18 +1001,15 @@ function buildMetro(reuse=false){
   const mwrap=document.getElementById('metro-wrap');
   metro.innerHTML='';
 
-  // reset metro-wrap transform
   mwrap.style.transition='none';
   mwrap.style.transform='scale(1)';
   mwrap.style.opacity='1';
   mwrap.style.transformOrigin='center center';
 
-  // pick template and cat order — reuse if back, new if first load
   const isMobile=window.innerWidth<=700;
   if(!reuse || !_savedTpl){
     _savedTpl = isMobile ? MOBILE_TEMPLATE : TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
     if(isMobile){
-      // pin Observations to the hero tile (its name is long and gets clipped in small tiles)
       const obs = DATA.find(c=>c.id==='observations');
       const rest = shuffle(DATA.filter(c=>c.id!=='observations'));
       _savedCats = obs ? [obs, ...rest] : shuffle([...DATA]);
@@ -928,7 +1023,7 @@ function buildMetro(reuse=false){
   metro.style.gridTemplateRows = tpl.rowTemplate ? tpl.rowTemplate : `repeat(${tpl.rows},1fr)`;
 
   cats.forEach((cat,i)=>{
-    if(i>7)return; // max 8 tiles
+    if(i>7)return;
     const area=tpl.areas[i];
     const tile=document.createElement('div');
     tile.className='tile';
@@ -955,7 +1050,6 @@ function zoomTransition(tile,catIdx){
   const transTitle=document.getElementById('trans-title');
   const cat=DATA[catIdx];
 
-  // calculate which tile was clicked and set transform-origin toward it
   const tRect=tile.getBoundingClientRect();
   const wRect=mwrap.getBoundingClientRect();
   const ox=((tRect.left+tRect.width/2)-wRect.left)/wRect.width*100;
@@ -963,37 +1057,30 @@ function zoomTransition(tile,catIdx){
 
   mwrap.style.transformOrigin=`${ox}% ${oy}%`;
 
-  // re-enable transition
   mwrap.style.transition='transform .55s cubic-bezier(.4,0,.2,1),opacity .45s ease';
 
-  // PHASE 1: zoom in + fade out grid
   mwrap.style.transform='scale(1.18)';
   mwrap.style.opacity='0';
 
-  // PHASE 2: show black overlay
   setTimeout(()=>{
     trans.classList.add('fade-in');
     transTitle.textContent=cat.title;
     setTimeout(()=>transTitle.classList.add('show'),100);
   },300);
 
-  // PHASE 3: build gallery behind overlay
   setTimeout(()=>{
     openCat(catIdx);
   },500);
 
-  // PHASE 4: fade out overlay → reveal gallery
   setTimeout(()=>{
     transTitle.classList.remove('show');
     trans.style.transition='opacity .5s ease';
     trans.classList.remove('fade-in');
-    // fade in gallery grid
     setTimeout(()=>{
       document.querySelector('.photo-grid').classList.add('in');
     },200);
   },1100);
 
-  // PHASE 5: cleanup overlay
   setTimeout(()=>{
     trans.style.transition='';
     transTitle.textContent='';
@@ -1008,20 +1095,19 @@ async function openCat(ci, fromPop=false){
   const cat=DATA[ci];
   filtItems=[...cat.items];
 
-  // topbar
   document.getElementById('tb-back').style.display='block';
   document.getElementById('tb-sep').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
 
   await renderGrid(filtItems,myGen);
-  if(myGen!==_catGen)return; // a newer category was opened while this one was still loading
+  if(myGen!==_catGen)return;
 
   setTimeout(()=>{
     document.getElementById('pg-gallery').scrollTop = 0;
-},0);
+  },0);
 
-  showPg('gallery',false); // false = no topbar reset (handled here)
+  showPg('gallery',false);
 
   if(!fromPop){
     history.pushState(
@@ -1039,9 +1125,7 @@ async function renderGrid(items,myGen){
   grid.innerHTML = '';
   grid.style.cssText = 'display:flex;gap:10px;padding:3px;align-items:flex-start;opacity:0;transition:opacity .5s ease';
 
-  // 1. detect ratios — cached per file so re-opening a category (e.g. Motion)
-  // doesn't re-probe video metadata every single time
-const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(resolve => {
+  const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(resolve => {
     const cached=_ratioCache.get(item.thumb);
     if(cached){
       resolve({...item, ...cached, originalIndex:index});
@@ -1049,7 +1133,6 @@ const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(r
     }
     const isVthumb = item.thumb && /\.(mp4|mov|webm)$/i.test(item.thumb);
     if(isVthumb){
-        // detect video ratio via HTMLVideoElement
         const v = document.createElement('video');
         v.muted = true;
         v.preload = 'metadata';
@@ -1057,41 +1140,27 @@ const itemsWithRatio = await Promise.all(items.map((item,index) => new Promise(r
           const r = v.videoWidth && v.videoHeight ? v.videoWidth/v.videoHeight : 1.25;
           const result={ratio:r,isVthumb:true};
           _ratioCache.set(item.thumb,result);
-          resolve({
-    ...item,
-    ...result,
-    originalIndex:index
-});
+          resolve({...item, ...result, originalIndex:index});
         };
-        v.onerror = () => resolve({...item, ratio:1.25, isVthumb:true});
+        v.onerror = () => resolve({...item, ratio:1.25, isVthumb:true, originalIndex:index});
         v.src = 'public/' + item.thumb;
         return;
       }
     const img = new Image();
-   img.onload = () => {
-    const result={ratio: img.naturalWidth / img.naturalHeight, isVthumb:false};
-    _ratioCache.set(item.thumb,result);
-    resolve({
-    ...item,
-    ...result,
-    originalIndex: index
-});
-};
-img.onerror = () => resolve({
-    ...item,
-    ratio: 1.25,
-    isVthumb: false,
-    originalIndex: index
-});
+    img.onload = () => {
+      const result={ratio: img.naturalWidth / img.naturalHeight, isVthumb:false};
+      _ratioCache.set(item.thumb,result);
+      resolve({...item, ...result, originalIndex: index});
+    };
+    img.onerror = () => resolve({...item, ratio: 1.25, isVthumb: false, originalIndex: index});
     img.src = 'public/' + item.thumb;
-  })));
+  }));
 
-  if(myGen!==undefined && myGen!==_catGen)return; // a different category was opened meanwhile — discard this stale result
+  if(myGen!==undefined && myGen!==_catGen)return;
 
-  // 2. masonry columns
-  const W    = window.innerWidth;
+  const W = window.innerWidth;
   const cols = W < 600 ? 2 : W < 1000 ? 3 : 4;
-  const GAP  = 3;
+  const GAP = 3;
   const colW = Math.floor((W - GAP*(cols+1)) / cols);
 
   const colEls = [], colH = [];
@@ -1102,11 +1171,10 @@ img.onerror = () => resolve({
     colEls.push(c); colH.push(0);
   }
 
-  // shuffle — no repeats
   const sorted = [...itemsWithRatio].reverse();
 
   sorted.forEach((item, index) => {
-    const h   = Math.round(colW / item.ratio);
+    const h = Math.round(colW / item.ratio);
     const card = document.createElement('div');
     card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%;border-radius:10px';
 
@@ -1117,20 +1185,17 @@ img.onerror = () => resolve({
     } else {
       card.innerHTML = `<img src="public/${item.thumb}" loading="lazy" style="width:100%;height:${h}px;object-fit:cover;display:block;filter:brightness(.85)"/><div class="pi-ov"><span>+</span></div>`;
     }
-    // hover
     const media = card.querySelector('img,video');
     card.addEventListener('mouseenter', () => { media.style.transform='scale(1.04)'; media.style.filter='brightness(.5)'; media.style.transition='transform .5s,filter .3s'; });
     card.addEventListener('mouseleave', () => { media.style.transform=''; media.style.filter='brightness(.85)'; });
     card.onclick = () => openLb(origIdx);
 
-    // place in shortest column
     let t = 0;
     for(let i = 1; i < cols; i++) if(colH[i] < colH[t]) t = i;
     colH[t] += h + GAP;
     colEls[t].appendChild(card);
   });
 
-  // fade in
   requestAnimationFrame(() => requestAnimationFrame(() => { grid.style.opacity='1'; }));
 }
 
@@ -1142,12 +1207,9 @@ function goHome(fromPop=false){
   const grid=document.querySelector('.photo-grid');
   const wrap=document.getElementById('wrap');
 
-  // fade out gallery
   if(grid) grid.classList.remove('in');
 
   if(fromPop){
-    // lightweight transition for native swipe-back / browser back —
-    // no black overlay flash, just a quick smooth crossfade
     wrap.style.transition='opacity .22s ease';
     wrap.style.opacity='0';
     setTimeout(()=>{
@@ -1157,17 +1219,14 @@ function goHome(fromPop=false){
     },160);
     setTimeout(()=>{ wrap.style.transition=''; },500);
   } else {
-    // PHASE 1: fade to black
     trans.style.transition='opacity .35s ease';
     trans.classList.add('fade-in');
 
-    // PHASE 2: rebuild home behind overlay
     setTimeout(()=>{
-      buildMetro(true); // reuse same layout
+      buildMetro(true);
       showPg('home',true);
     },380);
 
-    // PHASE 3: fade out overlay → reveal home
     setTimeout(()=>{
       trans.style.transition='opacity .6s ease';
       trans.classList.remove('fade-in');
@@ -1235,19 +1294,16 @@ function openLb(i){
   if(window.__lbResetZoom)window.__lbResetZoom(false);
   const lb=document.getElementById('lb');
 
-lb.animate(
-
-[
-{transform:'scale(.97)',opacity:0},
-{transform:'scale(1)',opacity:1}
-],
-
-{
-duration:350,
-easing:'cubic-bezier(.25,.8,.25,1)'
-}
-
-);
+  lb.animate(
+    [
+      {transform:'scale(.97)',opacity:0},
+      {transform:'scale(1)',opacity:1}
+    ],
+    {
+      duration:350,
+      easing:'cubic-bezier(.25,.8,.25,1)'
+    }
+  );
   document.getElementById('lb').classList.add('on');
   document.body.style.overflow='hidden';
 }
@@ -1260,7 +1316,6 @@ function renderLb(){
   const vid   = document.getElementById('lb-vid');
   const isV   = item.type==='video';
 
-  // reset both images first
   img.src=''; img.style.opacity='0';
   thumb.src=''; thumb.style.opacity='0';
 
@@ -1275,22 +1330,18 @@ function renderLb(){
     img.style.display='block';
     thumb.style.display='block';
 
-    // show thumb immediately as placeholder
     thumb.onload = () => { thumb.style.opacity='1'; };
     thumb.src = 'public/'+item.thumb;
 
-    // load HQ and swap
     const full = new Image();
     const targetHq = 'public/'+item.hq;
     full.onload = () => {
-      // make sure user hasn't navigated away
       if(filtItems[lbIdx] !== item) return;
       img.src = targetHq;
       img.style.opacity = '1';
       thumb.style.opacity = '0';
     };
     full.onerror = () => {
-      // HQ failed to load — at least don't leave the blurred placeholder stuck
       if(filtItems[lbIdx] !== item) return;
       thumb.style.opacity = '1';
     };
@@ -1302,9 +1353,7 @@ function renderLb(){
   document.getElementById('lb-ctr').textContent = `${lbIdx+1} / ${filtItems.length}`;
 }
 function closeLb(){
-
   const lb = document.getElementById('lb');
-
   lb.animate(
     [
       { transform:'scale(1)', opacity:1 },
@@ -1315,25 +1364,18 @@ function closeLb(){
       easing:'ease'
     }
   );
-
   setTimeout(() => {
-
     lb.classList.remove('on');
-
     const v = document.getElementById('lb-vid');
     v.pause();
     v.src = '';
-
     document.body.style.overflow = '';
-
   },220);
-
 }
 function lbNav(d){
   const stageEls=[document.getElementById('lb-img'),document.getElementById('lb-thumb'),document.getElementById('lb-vid')];
   if(window.__lbResetZoom)window.__lbResetZoom(false);
 
-  // slide the current content out
   stageEls.forEach(el=>{
     el.style.transition='transform .22s cubic-bezier(.4,0,.2,1)';
     el.style.transform=`translateX(${d>0?-40:40}px)`;
@@ -1343,12 +1385,11 @@ function lbNav(d){
     lbIdx=(lbIdx+d+filtItems.length)%filtItems.length;
     renderLb();
 
-    // position new content on the opposite side, then slide it in
     stageEls.forEach(el=>{
       el.style.transition='none';
       el.style.transform=`translateX(${d>0?40:-40}px)`;
     });
-    void stageEls[0].offsetWidth; // force reflow
+    void stageEls[0].offsetWidth;
     stageEls.forEach(el=>{
       el.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
       el.style.transform='translateX(0)';
@@ -1442,9 +1483,9 @@ document.getElementById('lb').addEventListener('click',e=>{
     }
     if(isPanning){
       isPanning=false;
-      return; // panning ends here — not a swipe
+      return;
     }
-    if(scale>1)return; // zoomed in — swipe-nav disabled, use drag to pan instead
+    if(scale>1)return;
     if(e.touches.length>0)return;
     const dx=e.changedTouches[0].clientX-swipeStartX;
     const dy=e.changedTouches[0].clientY-swipeStartY;
@@ -1453,7 +1494,6 @@ document.getElementById('lb').addEventListener('click',e=>{
     }
   },{passive:true});
 
-  // desktop: click to zoom, drag to pan while zoomed
   let mouseDown=false, dragMoved=false;
   let mStartX=0, mStartY=0, mStartPanX=0, mStartPanY=0;
 
@@ -1483,16 +1523,13 @@ document.getElementById('lb').addEventListener('click',e=>{
   });
 })();
 window.addEventListener('popstate', e => {
-
     if(!e.state || e.state.page === 'home'){
         goHome(true);
         return;
     }
-
     if(e.state.page === 'gallery'){
         openCat(e.state.cat, true);
     }
-
 });
 </script>
 </body>
