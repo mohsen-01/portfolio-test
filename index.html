@@ -42,6 +42,7 @@ img,video{
 /* ══ SITE ROOT — everything except the loading overlay lives in here,
    so the whole app can be blurred/sharpened as one unit (focus-pull) ══ */
 #site-root{
+  position:fixed;inset:0;
   filter:blur(24px);
   transform:scale(1.015);
   transition:filter 1s cubic-bezier(.4,0,.2,1), transform 1s cubic-bezier(.4,0,.2,1);
@@ -108,7 +109,7 @@ img,video{
 
 /* ══ TOPBAR ══ */
 #topbar{
-  position:fixed;top:0;left:0;right:0;height:var(--tb);
+  position:absolute;top:0;left:0;right:0;height:var(--tb);
   display:flex;align-items:center;
   padding:0 24px 0 56px;
   z-index:400;
@@ -151,7 +152,7 @@ img,video{
 
 /* hamburger */
 #hbg{
-  position:fixed;top:13px;left:14px;z-index:600;
+  position:absolute;top:13px;left:14px;z-index:600;
   width:28px;height:24px;cursor:pointer;
   display:flex;flex-direction:column;justify-content:space-between;
   padding:2px 0;
@@ -166,7 +167,7 @@ img,video{
 
 /* ══ SIDEBAR ══ */
 #sidebar{
-  position:fixed;left:0;top:0;bottom:0;width:var(--sw);
+  position:absolute;left:0;top:0;bottom:0;width:var(--sw);
   background:rgba(8,8,8,.98);
   border-right:1px solid rgba(255,255,255,.05);
   display:flex;flex-direction:column;padding:52px 36px 40px;
@@ -207,7 +208,7 @@ img,video{
 
 /* ══ DIM ══ */
 #dim{
-  position:fixed;inset:0;z-index:490;
+  position:absolute;inset:0;z-index:490;
   background:rgba(0,0,0,0);pointer-events:none;
   transition:background .4s;
 }
@@ -215,7 +216,7 @@ img,video{
 
 /* ══ WRAP ══ */
 #wrap{
-  position:fixed;inset:0;
+  position:absolute;inset:0;
   transition:transform .45s cubic-bezier(.77,0,.175,1),opacity .45s ease;
 }
 #wrap.pushed{transform:translateX(calc(var(--sw)*.45));opacity:.3}
@@ -290,7 +291,7 @@ img,video{
 
 /* ══ TRANSITION OVERLAY ══ */
 #trans{
-  position:fixed;inset:0;z-index:800;
+  position:absolute;inset:0;z-index:800;
   background:var(--bg);
   opacity:0;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
@@ -350,7 +351,7 @@ img,video{
 
 /* ══ LIGHTBOX ══ */
 #lb{
-  position:fixed;inset:0;z-index:900;background:#000;
+  position:absolute;inset:0;z-index:900;background:#000;
   display:flex;
 opacity:0;
 pointer-events:none;
