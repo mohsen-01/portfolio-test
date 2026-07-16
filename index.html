@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mohsen-01 — Visual Creator</title>
+<link rel="icon" href="public/logo.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" href="public/logo.svg"/>
+
+<!-- external CSS, cached separately from HTML/JS -->
+<link rel="stylesheet" href="style.css"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+
+<!-- deferred: parser isn't blocked waiting for these to download/execute -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="script.js" defer></script>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro">
+  <div id="iname">Mohsen 01</div>
+  <div id="isub">Visual Creator</div>
+</div>
+
+<!-- HAMBURGER -->
+<div id="hbg" onclick="toggleSB()">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div id="tb-left">
+    <button id="tb-back" onclick="goHome()">‹ HOME</button>
+	<span id="tb-sep"> / </span>
+    <span id="tb-cat"></span>
+  </div>
+  <span id="tb-name">Mohsen-01</span>
+</div>
+
+<!-- DIM -->
+<div id="dim" onclick="closeSB()"></div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+
+  <nav>
+    <a href="#" onclick="nav('home');return false" class="act">Home</a>
+    <a href="#" onclick="nav('about');return false">About</a>
+    <a href="#" onclick="nav('contact');return false">Contact</a>
+  </nav>
+  <div class="sb-soc">
+    <a href="https://instagram.com/01mohsen" target="_blank">Instagram</a>
+    <a href="https://behance.net/" target="_blank">Behance</a>
+    <a href="https://linkedin.com/" target="_blank">LinkedIn</a>
+  </div>
+</div>
+
+<!-- TRANSITION OVERLAY -->
+<div id="trans">
+  <div id="trans-title"></div>
+</div>
+
+<!-- WRAP -->
+<div id="wrap">
+
+  <!-- HOME -->
+  <div id="pg-home" class="pg act">
+    <div id="metro-wrap">
+      <div id="metro" class="seven"></div>
+    </div>
+  </div>
+
+  <!-- GALLERY -->
+  <div id="pg-gallery" class="pg">
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+
+  <!-- ABOUT -->
+  <div id="pg-about" class="pg">
+    <div class="pg-inner">
+      <img src="public/logo.svg" alt="Mohsen 01" class="about-logo"/>
+      <h1 class="pg-ttl">Mohsen 01</h1>
+      <p class="bio">Details create distinction.<br><br>I’m Mohsen, a visual creator specializing in photography and filmmaking. Since 2012, I’ve been creating visuals that combine minimalist aesthetics, cinematic storytelling, and meticulous attention to detail.<br><br>From product and fashion photography to commercial campaigns, social media films, documentaries, and music videos, every project is an opportunity to create meaningful visuals that elevate brands, evoke emotion, and leave a lasting impression.</p>
+      <div class="a-cols">
+        <div>
+          <div class="a-lbl">Specialties</div>
+          <div class="a-val">Commercial<br>Fashion<br>Product<br>Industrial<br>Video</div>
+        </div>
+        <div>
+          <div class="a-lbl">Studio</div>
+          <div class="a-val">FanStudio<br>Iran</div>
+        </div>
+      </div>
+    </div>
+  </div>
+   
+  <!-- CONTACT -->
+  <div id="pg-contact" class="pg">
+    <div class="pg-inner">
+      <h1 class="pg-ttl">Let's Work<br>Together</h1>
+      <a class="c-item" href="mailto:mohsen_01@ymail.com">
+        <span class="c-lbl">Email</span><span class="c-val">Mohsen_01@ymail.com</span><span class="c-arr">→</span>
+      </a>
+      <a class="c-item" href="https://instagram.com/01mohsen" target="_blank">
+        <span class="c-lbl">Instagram</span><span class="c-val">@01mohsen</span><span class="c-arr">→</span>
+      </a>
+      <a class="c-item" href="https://t.me/mohsen_01" target="_blank">
+        <span class="c-lbl">Telegram</span><span class="c-val">@Mohsen_01</span><span class="c-arr">→</span>
+      </a>
+      <a class="c-item" href="https://wa.me/989106005650" target="_blank">
+        <span class="c-lbl">WhatsApp</span><span class="c-val">+98 910 6005 650</span><span class="c-arr">→</span>
+      </a>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- LIGHTBOX -->
+<div id="lb">
+  <button class="lb-x" onclick="closeLb()">✕</button>
+  <div class="lb-ctr" id="lb-ctr"></div>
+  <button class="lbn" id="lb-p" onclick="lbNav(-1)">‹</button>
+  <img id="lb-thumb" src="" alt=""/>
+  <img id="lb-img" src="" alt=""/>
+  <video id="lb-vid" controls loop></video>
+  <button class="lbn" id="lb-n" onclick="lbNav(1)">›</button>
+  <div class="lb-meta">
+    <div class="lb-mt" id="lb-mt"></div>
+    <div class="lb-md" id="lb-md"></div>
+  </div>
+</div>
+
+</body>
+</html>
