@@ -231,18 +231,18 @@ img,video{
 .tile:hover .tile-lbl-c{opacity:1;transform:translateY(0)}
 
 /* ══ LOADER LINES + CAMERA FLASH REVEAL ══ */
-/* two hairlines slide in from the top/bottom edges toward the center
-   while content loads, then a quick white flash (like a camera shutter)
-   before the black screen fades away to reveal the page underneath. */
+/* two hairlines creep in from the top/bottom edges toward the text, at a
+   speed that eases and waits on real page-load progress (driven from JS —
+   see createLoaderController). They stop just short of the text with a
+   gap, then a quick white flash (like a camera shutter) fires before the
+   black screen fades away to reveal the page underneath. */
 .loader-lines{position:absolute;inset:0;z-index:2;pointer-events:none}
 .loader-line{
   position:absolute;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.85) 50%,transparent 100%);
 }
-.loader-line.lt{top:0;transition-property:top;transition-timing-function:cubic-bezier(.65,0,.35,1)}
-.loader-line.lb{bottom:0;transition-property:bottom;transition-timing-function:cubic-bezier(.65,0,.35,1)}
-.loader-line.lt.run{top:50%}
-.loader-line.lb.run{bottom:50%}
+.loader-line.lt{top:0}
+.loader-line.lb{bottom:0}
 
 .flash{
   position:absolute;inset:0;z-index:3;

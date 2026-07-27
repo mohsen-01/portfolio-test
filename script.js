@@ -41,6 +41,7 @@ function debounce(fn, wait){
   let t;
   return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); };
 }
+const wait = ms => new Promise(res=>setTimeout(res, ms));
 window.addEventListener('resize', debounce(setAppHeight, 100));
 
 // prevent easy copying — block right-click / drag-and-drop on images & videos
@@ -60,19 +61,73 @@ function kickAutoplayVideos(){
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
 
-// ── LOADER LINES + FLASH helper ──
-// Snaps a container's two hairlines back to the top/bottom edges and clears
-// any flash, instantly (transition disabled + forced reflow) so the effect
-// can be replayed cleanly every time a category is opened/closed.
-function resetLoader(container){
-  const lines = container.querySelectorAll('.loader-line');
-  const flash = container.querySelector('.flash');
-  lines.forEach(l=>{ l.style.transition='none'; l.classList.remove('run'); });
-  flash.style.transition='none'; flash.classList.remove('on');
-  void container.offsetWidth; // force reflow before re-enabling transitions
-  lines.forEach(l=>{ l.style.transition=''; });
-  flash.style.transition='';
-  return {lines, flash};
+// ── LOADER LINES + FLASH controller ──
+// Two hairlines creep in from the screen edges toward `textEl`, stopping
+// short of it by `padding`px (they never reach the actual center). Their
+// speed is NOT a fixed CSS duration — each frame eases toward a 92% "almost
+// there" point, so on a slow connection they visibly slow down and wait,
+// and on a fast one finish() only needs a short final nudge. finish()
+// is only ever called once the real content is actually ready, which is
+// what keeps the animation in sync with the page instead of a guess.
+function createLoaderController(container, textEl, padding=24){
+  const lineTop = container.querySelector('.loader-line.lt');
+  const lineBottom = container.querySelector('.loader-line.lb');
+  const flashEl = container.querySelector('.flash');
+  let progress = 0;
+  let rafId = null;
+  let running = false;
+
+  function gapTarget(){
+    const half = textEl.getBoundingClientRect().height / 2;
+    return Math.max(0, container.clientHeight / 2 - (half + padding));
+  }
+  function apply(p){
+    const pos = Math.round(gapTarget() * p);
+    lineTop.style.top = pos + 'px';
+    lineBottom.style.bottom = pos + 'px';
+  }
+  function tick(){
+    if(!running) return;
+    progress += (0.92 - progress) * 0.02; // decelerating creep, never quite arrives on its own
+    apply(progress);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  return {
+    // snap back to the screen edges instantly, ready to replay
+    reset(){
+      running = false;
+      if(rafId) cancelAnimationFrame(rafId);
+      progress = 0;
+      lineTop.style.transition = 'none';
+      lineBottom.style.transition = 'none';
+      flashEl.style.transition = 'none';
+      apply(0);
+      flashEl.classList.remove('on');
+      void container.offsetWidth; // force reflow
+      lineTop.style.transition = '';
+      lineBottom.style.transition = '';
+      flashEl.style.transition = '';
+    },
+    // begin the organic creep toward the text — keeps easing/waiting
+    // until finish() is called
+    start(){
+      running = true;
+      tick();
+    },
+    // real content is ready: close the small remaining gap, then flash
+    async finish(){
+      running = false;
+      if(rafId) cancelAnimationFrame(rafId);
+      lineTop.style.transition = 'top .3s cubic-bezier(.4,0,.2,1)';
+      lineBottom.style.transition = 'bottom .3s cubic-bezier(.4,0,.2,1)';
+      apply(1);
+      await wait(320);
+      flashEl.classList.add('on');
+      await wait(100);
+      flashEl.classList.remove('on');
+    }
+  };
 }
 
 // ── IntersectionObserver: pause offscreen gallery videos ──
@@ -147,34 +202,32 @@ let lbIdx=0;
 const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-probing video/image metadata on repeat visits
 
 // ── INIT ───────────────────────────────────
-window.addEventListener('load',()=>{
+window.addEventListener('load', async ()=>{
 setAppHeight();
-  const {lines: introLines, flash: introFlash} = resetLoader($intro);
+  const introText = document.querySelector('.intro-text');
+  const introLoader = createLoaderController($intro, introText, 26);
+  introLoader.reset();
 
-  setTimeout(()=>{
-    $iname.classList.add('in');$isub.classList.add('in');
-    // hairlines start converging from the top/bottom edges as the logo appears
-    introLines.forEach(l=>{ l.style.transitionDuration='1100ms'; l.classList.add('run'); });
-  },150);
+  $iname.classList.add('in');$isub.classList.add('in');
+  introLoader.start(); // hairlines begin creeping toward the logo text
 
-  const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
+  const dataPromise = loadSiteData();
+  // small floor so the creep is visible even on a very fast connection
+  const minVisible = wait(650);
 
-  setTimeout(()=>{
-    // lines have met at center — camera-shutter flash
-    introFlash.classList.add('on');
-  },1300);
+  const [data] = await Promise.all([dataPromise, minVisible]);
+  DATA = data;
+  buildMetro(); // home grid is now actually built and in the DOM
 
-  setTimeout(async ()=>{
-    introFlash.classList.remove('on');
-    $iname.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
-    $iname.style.transform='translateY(-24px)';
-    $iname.style.opacity='0';
-    $isub.style.opacity='0';
-    DATA = await dataPromise;
-    buildMetro();
-  },1400);
-  setTimeout(()=>$intro.classList.add('out'),1850);
-  setTimeout(()=>$intro.style.display='none',2700);
+  $iname.style.transition='transform .5s cubic-bezier(.77,0,.175,1),opacity .5s';
+  $iname.style.transform='translateY(-24px)';
+  $iname.style.opacity='0';
+  $isub.style.opacity='0';
+
+  await introLoader.finish(); // close the gap, then flash
+
+  $intro.classList.add('out');
+  setTimeout(()=>{ $intro.style.display='none'; },850);
 });
 
 // ── LAYOUT TEMPLATES (8 tiles, 12-col grid) ─
@@ -392,9 +445,10 @@ function buildMetro(reuse=false){
 }
 
 // ── iOS ZOOM + CINEMATIC TRANSITION ────────
-function zoomTransition(tile,catIdx){
+async function zoomTransition(tile,catIdx){
   const cat=DATA[catIdx];
-  const {lines: transLines, flash: transFlash} = resetLoader($trans);
+  const transLoader = createLoaderController($trans, $transTitle, 20);
+  transLoader.reset();
 
   const tRect=tile.getBoundingClientRect();
   const wRect=$metroWrap.getBoundingClientRect();
@@ -407,37 +461,30 @@ function zoomTransition(tile,catIdx){
   $metroWrap.style.transform='scale(1.18)';
   $metroWrap.style.opacity='0';
 
-  setTimeout(()=>{
-    $trans.classList.add('fade-in');
-    $transTitle.textContent=cat.title;
-    setTimeout(()=>$transTitle.classList.add('show'),100);
-    // hairlines converge from the edges while the category name is shown
-    transLines.forEach(l=>{ l.style.transitionDuration='700ms'; l.classList.add('run'); });
-  },300);
+  await wait(300);
+  $trans.classList.add('fade-in');
+  $transTitle.textContent=cat.title;
+  setTimeout(()=>$transTitle.classList.add('show'),100);
+  transLoader.start(); // hairlines begin creeping toward the category title
 
-  setTimeout(()=>{
-    openCat(catIdx);
-  },500);
+  // wait for BOTH a small floor (so the creep is visible) AND the gallery
+  // to really finish rendering — keeps the flash/reveal in sync with the
+  // page instead of firing on a fixed timer
+  await Promise.all([wait(450), openCat(catIdx)]);
 
-  setTimeout(()=>{
-    // lines have met at center — camera-shutter flash
-    transFlash.classList.add('on');
-  },1000);
+  await transLoader.finish(); // close the gap, then flash
 
+  $transTitle.classList.remove('show');
+  $trans.style.transition='opacity .5s ease';
+  $trans.classList.remove('fade-in');
   setTimeout(()=>{
-    transFlash.classList.remove('on');
-    $transTitle.classList.remove('show');
-    $trans.style.transition='opacity .5s ease';
-    $trans.classList.remove('fade-in');
-    setTimeout(()=>{
-      document.querySelector('.photo-grid').classList.add('in');
-    },200);
-  },1100);
+    document.querySelector('.photo-grid').classList.add('in');
+  },200);
 
   setTimeout(()=>{
     $trans.style.transition='';
     $transTitle.textContent='';
-  },1700);
+  },600);
 }
 
 // ── OPEN CATEGORY ──────────────────────────
@@ -571,10 +618,8 @@ function goHome(fromPop=false){
     },160);
     setTimeout(()=>{ $wrap.style.transition=''; },500);
   } else {
-    const {lines: transLines, flash: transFlash} = resetLoader($trans);
     $trans.style.transition='opacity .35s ease';
     $trans.classList.add('fade-in');
-    transLines.forEach(l=>{ l.style.transitionDuration='700ms'; l.classList.add('run'); });
 
     setTimeout(()=>{
       buildMetro(true);
@@ -582,20 +627,14 @@ function goHome(fromPop=false){
     },380);
 
     setTimeout(()=>{
-      // lines have met at center — camera-shutter flash
-      transFlash.classList.add('on');
-    },700);
-
-    setTimeout(()=>{
-      transFlash.classList.remove('on');
       $trans.style.transition='opacity .6s ease';
       $trans.classList.remove('fade-in');
-    },800);
+    },600);
 
     setTimeout(()=>{
       $trans.style.transition='';
       $transTitle.textContent='';
-    },1450);
+    },1300);
   }
 
   document.querySelectorAll('#sidebar nav a').forEach(a=>a.classList.remove('act'));
