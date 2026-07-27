@@ -73,7 +73,8 @@ function kickAutoplayVideos(){
 // and on a fast one finish() only needs a short final nudge. finish()
 // is only ever called once the real content is actually ready, which is
 // what keeps the animation in sync with the page instead of a guess.
-function createLoaderController(container, textEl, padding=24){
+function createLoaderController(container, textEls, padding=24){
+  const els = Array.isArray(textEls) ? textEls : [textEls];
   const lineTop = container.querySelector('.loader-line.lt');
   const lineBottom = container.querySelector('.loader-line.lb');
   const flashEl = container.querySelector('.flash');
@@ -82,7 +83,16 @@ function createLoaderController(container, textEl, padding=24){
   let running = false;
 
   function gapTarget(){
-    const half = textEl.getBoundingClientRect().height / 2;
+    // union bounding box across all given elements — lets intro pass
+    // [$iname, $isub] as two separate elements instead of needing a
+    // shared wrapper (which previously caused layout/wrapping bugs)
+    let top=Infinity, bottom=-Infinity;
+    els.forEach(el=>{
+      const r = el.getBoundingClientRect();
+      top = Math.min(top, r.top);
+      bottom = Math.max(bottom, r.bottom);
+    });
+    const half = (bottom - top) / 2;
     return Math.max(0, container.clientHeight / 2 - (half + padding));
   }
   function apply(p){
@@ -218,8 +228,7 @@ const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-pr
 // ── INIT ───────────────────────────────────
 window.addEventListener('load', async ()=>{
 setAppHeight();
-  const introText = document.querySelector('.intro-text');
-  const introLoader = createLoaderController($intro, introText, 26);
+  const introLoader = createLoaderController($intro, [$iname, $isub], 26);
   introLoader.reset();
 
   $iname.classList.add('in');$isub.classList.add('in');
