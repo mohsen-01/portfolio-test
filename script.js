@@ -20,6 +20,10 @@ const $lbVid   = document.getElementById('lb-vid');
 const $lbMt    = document.getElementById('lb-mt');
 const $lbMd    = document.getElementById('lb-md');
 const $lbCtr   = document.getElementById('lb-ctr');
+// single shared loader-controller for the #trans overlay (category open AND
+// go-home both use this overlay, so it must be reset before EITHER shows it,
+// or leftover line positions from the last category-open linger on screen)
+let transLoader = null;
 
 // ── utils ──────────────────────────────────
 function shuffle(a){
@@ -129,6 +133,7 @@ function createLoaderController(container, textEl, padding=24){
     }
   };
 }
+transLoader = createLoaderController($trans, $transTitle, 20);
 
 // ── IntersectionObserver: pause offscreen gallery videos ──
 // The justified grid can hold many autoplay videos at once; only the ones
@@ -212,8 +217,9 @@ setAppHeight();
   introLoader.start(); // hairlines begin creeping toward the logo text
 
   const dataPromise = loadSiteData();
-  // small floor so the creep is visible even on a very fast connection
-  const minVisible = wait(650);
+  // hold the logo on screen long enough to actually read it, regardless
+  // of how fast data.xlsx loads
+  const minVisible = wait(2400);
 
   const [data] = await Promise.all([dataPromise, minVisible]);
   DATA = data;
@@ -447,7 +453,6 @@ function buildMetro(reuse=false){
 // ── iOS ZOOM + CINEMATIC TRANSITION ────────
 async function zoomTransition(tile,catIdx){
   const cat=DATA[catIdx];
-  const transLoader = createLoaderController($trans, $transTitle, 20);
   transLoader.reset();
 
   const tRect=tile.getBoundingClientRect();
@@ -618,6 +623,7 @@ function goHome(fromPop=false){
     },160);
     setTimeout(()=>{ $wrap.style.transition=''; },500);
   } else {
+    transLoader.reset(); // hide any hairlines left near-center from the last category-open
     $trans.style.transition='opacity .35s ease';
     $trans.classList.add('fade-in');
 
