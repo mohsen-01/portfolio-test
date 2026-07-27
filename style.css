@@ -48,11 +48,14 @@ img,video{
 }
 #isub.in{opacity:1}
 .intro-text{text-align:center}
+<<<<<<< HEAD
 /* letter-spacing adds an invisible trailing gap after the last character,
    which is included in the text's box width — that phantom gap throws off
    text-align:center centering. Cancel it out so both lines optically align. */
 #iname span{margin-right:-.3em}
 #isub span{margin-right:-.4em}
+=======
+>>>>>>> b6364edc4101c67aa75cf339cb32b987e8390642
 
 /* ══ TOPBAR ══ */
 #topbar{
