@@ -60,6 +60,21 @@ function kickAutoplayVideos(){
 }
 ['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
 
+// ── LOADER LINES + FLASH helper ──
+// Snaps a container's two hairlines back to the top/bottom edges and clears
+// any flash, instantly (transition disabled + forced reflow) so the effect
+// can be replayed cleanly every time a category is opened/closed.
+function resetLoader(container){
+  const lines = container.querySelectorAll('.loader-line');
+  const flash = container.querySelector('.flash');
+  lines.forEach(l=>{ l.style.transition='none'; l.classList.remove('run'); });
+  flash.style.transition='none'; flash.classList.remove('on');
+  void container.offsetWidth; // force reflow before re-enabling transitions
+  lines.forEach(l=>{ l.style.transition=''; });
+  flash.style.transition='';
+  return {lines, flash};
+}
+
 // ── IntersectionObserver: pause offscreen gallery videos ──
 // The justified grid can hold many autoplay videos at once; only the ones
 // actually visible need to be decoding/playing. Saves CPU/battery/bandwidth
@@ -134,18 +149,30 @@ const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-pr
 // ── INIT ───────────────────────────────────
 window.addEventListener('load',()=>{
 setAppHeight();
-  setTimeout(()=>{$iname.classList.add('in');$isub.classList.add('in')},150);
+  const {lines: introLines, flash: introFlash} = resetLoader($intro);
+
+  setTimeout(()=>{
+    $iname.classList.add('in');$isub.classList.add('in');
+    // hairlines start converging from the top/bottom edges as the logo appears
+    introLines.forEach(l=>{ l.style.transitionDuration='1100ms'; l.classList.add('run'); });
+  },150);
 
   const dataPromise = loadSiteData(); // kick off fetch now, doesn't block the intro
 
+  setTimeout(()=>{
+    // lines have met at center — camera-shutter flash
+    introFlash.classList.add('on');
+  },1300);
+
   setTimeout(async ()=>{
+    introFlash.classList.remove('on');
     $iname.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
     $iname.style.transform='translateY(-24px)';
     $iname.style.opacity='0';
     $isub.style.opacity='0';
     DATA = await dataPromise;
     buildMetro();
-  },1500);
+  },1400);
   setTimeout(()=>$intro.classList.add('out'),1850);
   setTimeout(()=>$intro.style.display='none',2700);
 });
@@ -367,6 +394,7 @@ function buildMetro(reuse=false){
 // ── iOS ZOOM + CINEMATIC TRANSITION ────────
 function zoomTransition(tile,catIdx){
   const cat=DATA[catIdx];
+  const {lines: transLines, flash: transFlash} = resetLoader($trans);
 
   const tRect=tile.getBoundingClientRect();
   const wRect=$metroWrap.getBoundingClientRect();
@@ -383,6 +411,8 @@ function zoomTransition(tile,catIdx){
     $trans.classList.add('fade-in');
     $transTitle.textContent=cat.title;
     setTimeout(()=>$transTitle.classList.add('show'),100);
+    // hairlines converge from the edges while the category name is shown
+    transLines.forEach(l=>{ l.style.transitionDuration='700ms'; l.classList.add('run'); });
   },300);
 
   setTimeout(()=>{
@@ -390,6 +420,12 @@ function zoomTransition(tile,catIdx){
   },500);
 
   setTimeout(()=>{
+    // lines have met at center — camera-shutter flash
+    transFlash.classList.add('on');
+  },1000);
+
+  setTimeout(()=>{
+    transFlash.classList.remove('on');
     $transTitle.classList.remove('show');
     $trans.style.transition='opacity .5s ease';
     $trans.classList.remove('fade-in');
@@ -535,8 +571,10 @@ function goHome(fromPop=false){
     },160);
     setTimeout(()=>{ $wrap.style.transition=''; },500);
   } else {
+    const {lines: transLines, flash: transFlash} = resetLoader($trans);
     $trans.style.transition='opacity .35s ease';
     $trans.classList.add('fade-in');
+    transLines.forEach(l=>{ l.style.transitionDuration='700ms'; l.classList.add('run'); });
 
     setTimeout(()=>{
       buildMetro(true);
@@ -544,14 +582,20 @@ function goHome(fromPop=false){
     },380);
 
     setTimeout(()=>{
+      // lines have met at center — camera-shutter flash
+      transFlash.classList.add('on');
+    },700);
+
+    setTimeout(()=>{
+      transFlash.classList.remove('on');
       $trans.style.transition='opacity .6s ease';
       $trans.classList.remove('fade-in');
-    },600);
+    },800);
 
     setTimeout(()=>{
       $trans.style.transition='';
       $transTitle.textContent='';
-    },1300);
+    },1450);
   }
 
   document.querySelectorAll('#sidebar nav a').forEach(a=>a.classList.remove('act'));
