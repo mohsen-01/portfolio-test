@@ -493,10 +493,14 @@ async function zoomTransition(tile,catIdx){
   setTimeout(()=>$transTitle.classList.add('show'),100);
   transLoader.start(); // hairlines begin creeping toward the category title
 
-  // wait for BOTH a small floor (so the creep is visible) AND the gallery
-  // to really finish rendering — keeps the flash/reveal in sync with the
-  // page instead of firing on a fixed timer
-  await Promise.all([wait(450), openCat(catIdx)]);
+  // #trans's own opacity transition (.35s — see CSS) MUST finish before we
+  // swap in the new page underneath it. Otherwise a fast/cached category
+  // can finish loading and swap pages while the overlay is still
+  // see-through, flashing the new content through it.
+  await wait(380);
+
+  // only now is it safe to build + reveal the gallery behind the solid overlay
+  await Promise.all([wait(300), openCat(catIdx)]);
 
   await transLoader.finish(); // close the gap, then flash
 
