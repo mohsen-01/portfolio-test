@@ -81,6 +81,7 @@ function createLoaderController(container, textEls, padding=24){
   let progress = 0;
   let rafId = null;
   let running = false;
+  let pulseTimer = null;
 
   function gapTarget(){
     // union bounding box across all given elements — lets intro pass
@@ -115,12 +116,15 @@ function createLoaderController(container, textEls, padding=24){
     reset(){
       running = false;
       if(rafId) cancelAnimationFrame(rafId);
+      if(pulseTimer) clearTimeout(pulseTimer);
       progress = 0;
       lineTop.style.transition = 'none';
       lineBottom.style.transition = 'none';
       flashEl.style.transition = 'none';
       lineTop.style.opacity = '0';
       lineBottom.style.opacity = '0';
+      lineTop.classList.remove('pulse');
+      lineBottom.classList.remove('pulse');
       apply(0);
       flashEl.classList.remove('on');
       void container.offsetWidth; // force reflow
@@ -129,7 +133,9 @@ function createLoaderController(container, textEls, padding=24){
       flashEl.style.transition = '';
     },
     // fade the lines in and begin the organic creep toward the text —
-    // keeps easing/waiting until finish() is called
+    // keeps easing/waiting until finish() is called. If loading is still
+    // going after a beat, switch the lines to a slow breathing pulse so a
+    // slow connection still visibly reads as "working", not stuck.
     start(){
       running = true;
       lineTop.style.transition = 'opacity .3s ease';
@@ -137,11 +143,21 @@ function createLoaderController(container, textEls, padding=24){
       lineTop.style.opacity = '1';
       lineBottom.style.opacity = '1';
       tick();
+      pulseTimer = setTimeout(()=>{
+        if(!running)return; // finish() already fired — a fast load doesn't need this
+        lineTop.classList.add('pulse');
+        lineBottom.classList.add('pulse');
+      },900);
     },
     // real content is ready: close the small remaining gap, then flash
     async finish(){
       running = false;
       if(rafId) cancelAnimationFrame(rafId);
+      if(pulseTimer) clearTimeout(pulseTimer);
+      lineTop.classList.remove('pulse');
+      lineBottom.classList.remove('pulse');
+      lineTop.style.opacity = '1';
+      lineBottom.style.opacity = '1';
       lineTop.style.transition = 'top .3s cubic-bezier(.4,0,.2,1)';
       lineBottom.style.transition = 'bottom .3s cubic-bezier(.4,0,.2,1)';
       apply(1);
@@ -221,6 +237,10 @@ async function loadSiteData(){
 // ── state ──────────────────────────────────
 let DATA=[];
 let curCat=0;
+// true while a category-open or go-home transition is in flight — guards
+// against a second tile click (or Home tap) landing mid-transition, which
+// on a slow load could otherwise fire a second, overlapping navigation
+let navBusy=false;
 let filtItems=[];
 let lbIdx=0;
 const _ratioCache=new Map(); // thumb path -> {ratio, isVthumb} — avoids re-probing video/image metadata on repeat visits
@@ -423,6 +443,7 @@ let _savedCats = null;
 
 function buildMetro(reuse=false){
   $metro.innerHTML='';
+  $metro.style.pointerEvents=''; // re-enable tile clicks — home is interactive again
 
   $metroWrap.style.transition='none';
   $metroWrap.style.transform='scale(1)';
@@ -470,6 +491,13 @@ function buildMetro(reuse=false){
 
 // ── iOS ZOOM + CINEMATIC TRANSITION ────────
 async function zoomTransition(tile,catIdx){
+  if(navBusy)return; // ignore a second tap while one transition is already in flight
+  navBusy=true;
+  $metro.style.pointerEvents='none'; // block further tile clicks immediately —
+  // opacity fading to 0 does NOT stop clicks from reaching the tiles underneath,
+  // which was exactly how a slow load could get double-navigated into the
+  // wrong category
+
   const cat=DATA[catIdx];
   transLoader.reset();
 
@@ -484,37 +512,41 @@ async function zoomTransition(tile,catIdx){
   $metroWrap.style.transform='scale(1.18)';
   $metroWrap.style.opacity='0';
 
-  await wait(300);
-  $trans.classList.add('fade-in');
-  $transTitle.textContent='';
-  const titleSpan=document.createElement('span');
-  titleSpan.textContent=cat.title;
-  $transTitle.appendChild(titleSpan);
-  setTimeout(()=>$transTitle.classList.add('show'),100);
-  transLoader.start(); // hairlines begin creeping toward the category title
-
-  // #trans's own opacity transition (.35s — see CSS) MUST finish before we
-  // swap in the new page underneath it. Otherwise a fast/cached category
-  // can finish loading and swap pages while the overlay is still
-  // see-through, flashing the new content through it.
-  await wait(380);
-
-  // only now is it safe to build + reveal the gallery behind the solid overlay
-  await Promise.all([wait(300), openCat(catIdx)]);
-
-  await transLoader.finish(); // close the gap, then flash
-
-  $transTitle.classList.remove('show');
-  $trans.style.transition='opacity .5s ease';
-  $trans.classList.remove('fade-in');
-  setTimeout(()=>{
-    document.querySelector('.photo-grid').classList.add('in');
-  },200);
-
-  setTimeout(()=>{
-    $trans.style.transition='';
+  try{
+    await wait(300);
+    $trans.classList.add('fade-in');
     $transTitle.textContent='';
-  },600);
+    const titleSpan=document.createElement('span');
+    titleSpan.textContent=cat.title;
+    $transTitle.appendChild(titleSpan);
+    setTimeout(()=>$transTitle.classList.add('show'),100);
+    transLoader.start(); // hairlines begin creeping toward the category title
+
+    // #trans's own opacity transition (.35s — see CSS) MUST finish before we
+    // swap in the new page underneath it. Otherwise a fast/cached category
+    // can finish loading and swap pages while the overlay is still
+    // see-through, flashing the new content through it.
+    await wait(380);
+
+    // only now is it safe to build + reveal the gallery behind the solid overlay
+    await Promise.all([wait(300), openCat(catIdx)]);
+
+    await transLoader.finish(); // close the gap, then flash
+
+    $transTitle.classList.remove('show');
+    $trans.style.transition='opacity .5s ease';
+    $trans.classList.remove('fade-in');
+    setTimeout(()=>{
+      document.querySelector('.photo-grid').classList.add('in');
+    },200);
+
+    setTimeout(()=>{
+      $trans.style.transition='';
+      $transTitle.textContent='';
+    },600);
+  } finally {
+    navBusy=false; // safe to navigate again — gallery is up, overlay is clearing
+  }
 }
 
 // ── OPEN CATEGORY ──────────────────────────
@@ -634,6 +666,9 @@ async function renderGrid(items,myGen){
 
 // ── GO HOME with cinematic back transition ──
 function goHome(fromPop=false){
+  if(navBusy)return; // ignore a stray tap while a transition is already in flight
+  navBusy=true;
+
   const grid=document.querySelector('.photo-grid');
 
   if(grid) grid.classList.remove('in');
@@ -645,6 +680,7 @@ function goHome(fromPop=false){
       buildMetro(true);
       showPg('home',true);
       requestAnimationFrame(()=>{ $wrap.style.opacity='1'; });
+      navBusy=false;
     },160);
     setTimeout(()=>{ $wrap.style.transition=''; },500);
   } else {
@@ -655,6 +691,7 @@ function goHome(fromPop=false){
     setTimeout(()=>{
       buildMetro(true);
       showPg('home',true);
+      navBusy=false;
     },380);
 
     setTimeout(()=>{
