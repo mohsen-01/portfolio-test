@@ -250,6 +250,13 @@ img,video{
 }
 .loader-line.lt{top:0}
 .loader-line.lb{bottom:0}
+/* kicks in only if loading takes a while (see JS) — a quiet breathing pulse
+   so a slow connection still reads as "working", not frozen */
+@keyframes loaderPulse{
+  0%,100%{opacity:.9}
+  50%{opacity:.3}
+}
+.loader-line.pulse{animation:loaderPulse 1.6s ease-in-out infinite}
 
 .flash{
   position:absolute;inset:0;z-index:3;
