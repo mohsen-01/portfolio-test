@@ -638,7 +638,7 @@ async function renderGrid(items,myGen){
   sorted.forEach((item) => {
     const h   = Math.round(colW / item.ratio);
     const card = document.createElement('div');
-    card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%;border-radius:10px';
+    card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%;border-radius:0';
 
     const origIdx = item.originalIndex;
     if(item.isVthumb){
